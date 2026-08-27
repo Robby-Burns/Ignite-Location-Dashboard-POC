@@ -1,0 +1,32 @@
+# Atlas Guides — Runtime Model Configuration
+#
+# This file contains deployment-specific assignments.
+# Role/directive files MUST remain provider/model agnostic.
+#
+# Fill these values for the runtime you are actually using.
+
+roles:
+  builder:
+    provider: ""
+    model: ""
+  checker:
+    provider: ""
+    model: ""
+  evaluator:
+    provider: ""
+    model: ""
+  finalizer:
+    provider: ""
+    model: ""
+
+# Optional runtime adapter:
+runtime:
+  name: ""
+  adapter: ""
+
+# Optional fallback policy.
+# Leave empty unless the runtime explicitly supports fallback routing.
+fallback:
+  enabled: false
+  provider: ""
+  model: ""

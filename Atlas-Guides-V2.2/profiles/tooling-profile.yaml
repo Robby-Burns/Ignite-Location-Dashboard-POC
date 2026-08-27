@@ -1,0 +1,25 @@
+# Atlas Guides — Project Tooling Profile
+#
+# Project-specific configuration for Ignite Facility Operational Decision Agent POC.
+
+language: "python / node"
+
+commands:
+  test: "uv run pytest -v"
+  lint: "uv run ruff check ."
+  format_check: "uv run ruff format --check ."
+  frontend_build: "cd frontend ; npm.cmd run build"
+
+paths:
+  source: "src"
+  frontend: "frontend"
+  tests: "tests"
+
+architecture_checks: []
+
+standards:
+  - "Atlas-Guides-V2.2/standards/coding-standards.md"
+  - "Atlas-Guides-V2.2/standards/mcp-standards.md"
+  - "Atlas-Guides-V2.2/standards/agentic-architecture-standards.txt"
+
+
