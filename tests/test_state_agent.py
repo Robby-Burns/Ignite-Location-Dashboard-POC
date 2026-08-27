@@ -267,7 +267,7 @@ async def test_openrouter_llm_invocation_with_mocked_api() -> None:
 
     client = LLMClient(
         api_key="sk-or-v1-mock-key",
-        model="google/gemini-2.0-flash-001",
+        model="google/gemini-2.5-flash",
         provider="openrouter",
     )
     with patch.object(client, "_call_openrouter_api", return_value=mock_llm_response):
@@ -278,7 +278,7 @@ async def test_openrouter_llm_invocation_with_mocked_api() -> None:
 
         assert analysis.audit_receipt.is_live_call is True
         assert analysis.audit_receipt.provider == "openrouter"
-        assert analysis.audit_receipt.model == "google/gemini-2.0-flash-001"
+        assert analysis.audit_receipt.model == "google/gemini-2.5-flash"
         assert analysis.analysis_state == "ANALYSIS_COMPLETE"
         assert (
             "Ignite Oak Brook demonstrates solid overall operational performance"

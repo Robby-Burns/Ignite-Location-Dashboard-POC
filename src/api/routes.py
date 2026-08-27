@@ -119,6 +119,7 @@ async def analyze_facility_state_endpoint(
 
 
 @router.get("/agent/facility-trends", response_model=FacilityTrendExplanationReport)
+@router.get("/agent/explain-trends", response_model=FacilityTrendExplanationReport)
 async def explain_facility_trends_endpoint(
     facility_id: str = Query(
         default="ignite-oak-brook", description="Facility identifier"
@@ -224,6 +225,33 @@ async def get_recommendations_endpoint(
     """Generate prioritized, data-grounded operational recommendations (Story 2.5)."""
     try:
         return await recommendation_agent.generate_recommendations(
+            facility_id=facility_id,
+            scenario=scenario,
+            days_history=days_history,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+from src.agent.brief_agent import FacilityBriefAgent
+from src.analytics.briefing import FacilityBriefReport
+
+brief_agent = FacilityBriefAgent(mcp_client=mcp_client)
+
+
+@router.get("/agent/facility-brief", response_model=FacilityBriefReport)
+async def get_facility_brief_endpoint(
+    facility_id: str = Query(
+        default="ignite-oak-brook", description="Facility identifier"
+    ),
+    scenario: str = Query(default="baseline", description="Operational scenario name"),
+    days_history: int = Query(
+        default=30, ge=1, le=365, description="Historical observation days"
+    ),
+) -> FacilityBriefReport:
+    """Generate concise, human-readable Facility Brief for facility leaders (Story 3.1, AC-3.1.1)."""
+    try:
+        return await brief_agent.generate_facility_brief(
             facility_id=facility_id,
             scenario=scenario,
             days_history=days_history,

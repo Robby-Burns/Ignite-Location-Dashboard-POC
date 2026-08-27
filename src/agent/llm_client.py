@@ -122,20 +122,39 @@ class LLMClient:
         self.base_url = base_url or os.getenv("LLM_BASE_URL")
 
         # Resolve model name
-        if model:
-            self.model = model
-        elif os.getenv("OPENROUTER_MODEL") and self.effective_provider == "openrouter":
-            self.model = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
-        elif os.getenv("LLM_MODEL"):
-            self.model = os.getenv("LLM_MODEL", "google/gemini-2.0-flash-001")
-        elif self.effective_provider == "openrouter":
-            self.model = "google/gemini-2.0-flash-001"
-        elif self.effective_provider == "gemini":
-            self.model = "gemini-2.0-flash"
-        elif self.effective_provider == "openai":
-            self.model = "gpt-4o-mini"
-        else:
-            self.model = "google/gemini-2.0-flash-001"
+        raw_model = (
+            model
+            or (
+                os.getenv("OPENROUTER_MODEL")
+                if self.effective_provider == "openrouter"
+                else None
+            )
+            or os.getenv("LLM_MODEL")
+            or (
+                "google/gemini-2.5-flash"
+                if self.effective_provider == "openrouter"
+                else (
+                    "gemini-2.0-flash"
+                    if self.effective_provider == "gemini"
+                    else "gpt-4o-mini"
+                )
+            )
+        )
+
+        # Normalize OpenRouter model aliases
+        if self.effective_provider == "openrouter":
+            if raw_model in (
+                "google/gemini-2.0-flash-001",
+                "google/gemini-2.0-flash",
+                "gemini-2.0-flash",
+            ):
+                raw_model = "google/gemini-2.5-flash"
+            elif raw_model == "gpt-4o-mini":
+                raw_model = "openai/gpt-4o-mini"
+            elif raw_model == "claude-3.5-haiku":
+                raw_model = "anthropic/claude-3.5-haiku"
+
+        self.model = raw_model
 
     @property
     def has_live_credentials(self) -> bool:

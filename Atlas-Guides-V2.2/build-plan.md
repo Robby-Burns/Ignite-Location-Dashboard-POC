@@ -66,9 +66,9 @@
 
 | Story ID | Title | Risk | Dependencies | Status |
 |---|---|---|---|---|
-| **3.1** | Facility Brief | LOW | 2.3, 2.4 | PENDING |
-| **3.2** | What It Means | LOW | 2.2 | PENDING |
-| **3.3** | Recommendations | LOW | 2.5 | PENDING |
+| **3.1** | Facility Brief | LOW | 2.3, 2.4 | **STORY_VERIFIED** |
+| **3.2** | What It Means | LOW | 2.2 | **STORY_VERIFIED** |
+| **3.3** | Recommendations | LOW | 2.5 | **BUILDING_1** |
 | **3.4** | Technical / How It Works | LOW | 1.2, 2.1, 2.5 | PENDING |
 | **GATE-3** | Phase 3 Gate | LOW | 3.1 - 3.4 | PENDING |
 
