@@ -265,7 +265,11 @@ async def test_openrouter_llm_invocation_with_mocked_api() -> None:
         "data_limitations": "Complete 30-day history available.",
     }
 
-    client = LLMClient(api_key="sk-or-v1-mock-key", model="google/gemini-2.0-flash-001", provider="openrouter")
+    client = LLMClient(
+        api_key="sk-or-v1-mock-key",
+        model="google/gemini-2.0-flash-001",
+        provider="openrouter",
+    )
     with patch.object(client, "_call_openrouter_api", return_value=mock_llm_response):
         agent = FacilityStateAgent(llm_client=client)
         analysis = await agent.analyze_facility_state(

@@ -137,7 +137,6 @@ class LLMClient:
         else:
             self.model = "google/gemini-2.0-flash-001"
 
-
     @property
     def has_live_credentials(self) -> bool:
         """Return whether external LLM API credentials are configured."""
@@ -160,9 +159,13 @@ class LLMClient:
         receipt_id = f"REC-LLM-{int(time.time())}-{uuid.uuid4().hex[:6]}"
 
         # 1. OpenRouter Provider
-        if self.effective_provider == "openrouter" and (self.openrouter_key or self.generic_key):
+        if self.effective_provider == "openrouter" and (
+            self.openrouter_key or self.generic_key
+        ):
             try:
-                result_json = await self._call_openrouter_api(system_prompt, user_prompt)
+                result_json = await self._call_openrouter_api(
+                    system_prompt, user_prompt
+                )
                 elapsed_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
                 receipt = LLMExecutionReceipt(
                     receipt_id=receipt_id,
@@ -196,7 +199,11 @@ class LLMClient:
                 pass
 
         # 3. Native OpenAI Provider or Generic OpenAI-compatible
-        if (self.openai_key or self.generic_key) and self.effective_provider in ("openai", "generic", "none"):
+        if (self.openai_key or self.generic_key) and self.effective_provider in (
+            "openai",
+            "generic",
+            "none",
+        ):
             try:
                 result_json = await self._call_openai_api(system_prompt, user_prompt)
                 elapsed_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
@@ -230,13 +237,21 @@ class LLMClient:
         self, system_prompt: str, user_prompt: str
     ) -> dict[str, Any]:
         """Execute OpenRouter API call using chat completions standard."""
-        base = (os.getenv("OPENROUTER_BASE_URL") or self.base_url or "https://openrouter.ai/api/v1").rstrip("/")
+        base = (
+            os.getenv("OPENROUTER_BASE_URL")
+            or self.base_url
+            or "https://openrouter.ai/api/v1"
+        ).rstrip("/")
         url = f"{base}/chat/completions"
         key = self.openrouter_key or self.generic_key
         headers = {
             "Authorization": f"Bearer {key}",
-            "HTTP-Referer": os.getenv("OPENROUTER_REFERER", "https://github.com/Ignite-Medical-Resorts"),
-            "X-Title": os.getenv("OPENROUTER_APP_TITLE", "Ignite Facility Decision Agent"),
+            "HTTP-Referer": os.getenv(
+                "OPENROUTER_REFERER", "https://github.com/Ignite-Medical-Resorts"
+            ),
+            "X-Title": os.getenv(
+                "OPENROUTER_APP_TITLE", "Ignite Facility Decision Agent"
+            ),
             "Content-Type": "application/json",
         }
         payload = {

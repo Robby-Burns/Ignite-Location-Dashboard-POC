@@ -210,81 +210,83 @@ def _map_attention_item_to_recommendation(
     }
     target_role = role_map.get(item.domain, "Facility Executive Director")
 
-    # Domain-specific action mappings
-    if item.domain == "staffing":
-        st = snapshot.staffing
-        action_title = (
-            f"Mobilize Nursing Coverage to Resolve {st.open_shifts_count} Open Shifts"
-        )
-        suggested_action = (
-            f"Review on-call PRN roster, offer voluntary shift bonuses for critical shifts, "
-            f"and evaluate core floor nurse-to-patient allocation to restore direct care HPPD to the {st.hppd_budgeted_target} target."
-        )
-        rationale = (
-            f"Direct nursing hours are currently {st.hppd_actual} HPPD against a budget of {st.hppd_budgeted_target} HPPD "
-            f"with {st.open_shifts_count} open shifts and {st.agency_staff_pct}% agency reliance, increasing burnout and clinical care risks."
-        )
-        impact = "Restores nursing coverage to target ratios, mitigates overtime burnout, and safeguards clinical care delivery."
+    # Specific metric-level action mappings (AC-2.5.1)
+    if item.metric_name == "hppd_actual":
+        action_title = f"Adjust Direct Nursing Allocation to Recover {item.current_value} HPPD toward {item.threshold_or_target} Target"
+        suggested_action = f"Review shift nurse-to-patient staffing ratios and reallocate core floor RN/LPN coverage to resolve the {item.variance_or_deficit:.2f} HPPD direct care deficit."
+        rationale = item.evidence_statement
+        impact = "Restores bedside direct care hours to required acuity levels and prevents clinical care compromises."
 
-    elif item.domain == "hospital_transfers":
-        ht = snapshot.hospital_transfers
-        action_title = f"Conduct Clinical Root-Cause Review on {ht.acute_transfers_this_week} Acute Hospital Transfers"
-        suggested_action = (
-            "Initiate INTERACT 30-day transfer root-cause huddle with attending physicians, "
-            "audit change-in-condition early warning triggers, and ensure on-site respiratory and IV hydration protocols are utilized."
-        )
-        rationale = (
-            f"Facility experienced {ht.acute_transfers_this_week} acute hospital transfers in 7 days and has a 30-day readmission rate "
-            f"of {ht.readmission_rate_30d_pct}% vs the {ht.benchmark_readmission_rate_pct}% benchmark."
-        )
-        impact = "Reduces avoidable emergency room readmissions and strengthens acute hospital network preferred-provider partnership standing."
+    elif item.metric_name == "open_shifts_count":
+        action_title = f"Mobilize Shift Coverage to Fill {int(item.current_value)} Open Nursing Shifts"
+        suggested_action = "Engage internal PRN floating pool, offer voluntary incentive shift pick-ups, and review next-day roster to close schedule gaps."
+        rationale = item.evidence_statement
+        impact = "Eliminates unfilled shift exposure and reduces chronic overtime burden on regular floor staff."
 
-    elif item.domain == "payer_auth":
-        pa = snapshot.payer_auth
-        action_title = f"Fast-Track Urgent Re-Authorizations for {pa.expiring_authorizations_48h} Expiring Policies"
-        suggested_action = (
-            "Convene daily clinical-payer bridge huddle with physical therapy and case management to submit updated therapy progress notes "
-            "and clinical justifications to commercial and Medicare Advantage payers."
-        )
-        rationale = f"{pa.expiring_authorizations_48h} payer authorizations are expiring within the next 48 hours, exposing the facility to uncompensated care and claim denials."
-        impact = "Protects reimbursement coverage, prevents retroactive claim denials, and ensures orderly guest transition timing."
+    elif item.metric_name == "agency_staff_pct":
+        action_title = f"Execute Agency Reduction Strategy to Curb Elevated Reliance ({item.current_value}%)"
+        suggested_action = "Accelerate permanent staff nurse onboarding and review contract agency block bookings to transition shifts to internal staff."
+        rationale = item.evidence_statement
+        impact = "Decreases premium agency labor expenditures and improves care team familiarity and clinical continuity."
 
-    elif item.domain == "therapy":
-        th = snapshot.therapy
-        action_title = f"Optimize Rehabilitation Scheduling to Restore Completion ({th.treatment_completion_rate_pct}%)"
-        suggested_action = (
-            "Re-align therapy morning time blocks, address patient refusal and fatigue root causes, "
-            "and cross-cover therapist caseloads during peak guest morning routines."
-        )
-        rationale = f"Therapy treatment completion dropped to {th.treatment_completion_rate_pct}%, falling below the clinical target of 95.0%."
-        impact = "Accelerates functional mobility gains, shortens rehabilitation stay duration, and ensures full therapy compliance."
+    elif item.metric_name == "acute_transfers_this_week":
+        action_title = f"Conduct INTERACT Root-Cause Review on {int(item.current_value)} Acute Hospital Transfers"
+        suggested_action = "Initiate INTERACT clinical root-cause review with attending physicians and audit change-in-condition early warning triggers."
+        rationale = item.evidence_statement
+        impact = "Mitigates avoidable hospital transfers and protects acute care network partnership quality standing."
 
-    elif item.domain == "census":
+    elif item.metric_name == "readmission_rate_30d_pct":
+        action_title = f"Implement Readmission Reduction Action Plan ({item.current_value}% vs {item.threshold_or_target}% Benchmark)"
+        suggested_action = "Strengthen post-discharge follow-up calls within 48 hours and audit bedside medication reconciliation and patient education protocols."
+        rationale = item.evidence_statement
+        impact = "Brings 30-day readmission rate into compliance with benchmark targets and preferred-network standards."
+
+    elif item.metric_name == "expiring_authorizations_48h":
+        action_title = f"Fast-Track Clinical Justifications for {int(item.current_value)} Expiring Authorizations"
+        suggested_action = "Convene daily clinical-payer bridge huddle with physical therapy and case management to submit updated progress notes to commercial and MA payers."
+        rationale = item.evidence_statement
+        impact = "Prevents retroactive coverage denials, uncompensated care stays, and sudden guest discharge disruptions."
+
+    elif item.metric_name == "treatment_completion_rate_pct":
+        action_title = f"Re-Engineer Therapy Daily Schedule to Recover Completion ({item.current_value}%)"
+        suggested_action = "Audit patient therapy refusal and fatigue root causes, and adjust treatment time blocks to eliminate missed sessions."
+        rationale = item.evidence_statement
+        impact = "Ensures guests achieve planned functional recovery milestones on schedule and protects reimbursement compliance."
+
+    elif item.metric_name == "occupancy_rate_pct":
         c = snapshot.census
-        action_title = f"Activate Referral Partner Outreach to Fill {c.available_beds} Available Beds"
-        suggested_action = (
-            "Engage acute hospital discharge planners, review pending hospital referrals, "
-            "and expedite clinical intake screening to recover bed occupancy toward target."
-        )
-        rationale = f"Occupancy is currently {c.occupancy_rate_pct}% ({c.current_census} occupied beds), with {c.available_beds} beds available."
-        impact = "Improves bed capacity utilization and stabilizes operational revenue."
+        action_title = f"Activate Intake Referral Campaign to Fill {c.available_beds} Available Beds"
+        suggested_action = "Engage acute hospital discharge planners, review pending referrals, and expedite clinical intake screening."
+        rationale = item.evidence_statement
+        impact = "Recovers census occupancy toward target and optimizes clinical bed capacity."
 
-    elif item.domain == "length_of_stay":
-        los = snapshot.length_of_stay
-        action_title = f"Interdisciplinary Utilization Review on {los.los_outliers_count} Extended-Stay Guests"
-        suggested_action = (
-            "Conduct structured multi-disciplinary discharge planning huddle (Nursing, Therapy, Social Services) "
-            "to resolve home health, DME, or family placement bottlenecks."
-        )
-        rationale = f"Facility has {los.los_outliers_count} patients exceeding expected length of stay (average LOS is {los.average_los_days} days)."
-        impact = "Clears short-stay rehabilitation bed bottlenecks and reduces non-reimbursed length of stay exposure."
+    elif item.metric_name == "net_flow":
+        action_title = f"Reverse Negative Throughput Deficit ({int(item.current_value):+} Net Patient Flow)"
+        suggested_action = "Accelerate pending intake conversion while coordinating orderly discharge scheduling across clinical teams."
+        rationale = item.evidence_statement
+        impact = "Stabilizes net patient throughput and stops census erosion."
 
-    elif item.domain == "hospitality":
-        ho = snapshot.hospitality
-        action_title = f"Conduct Guest Culinary and Service Satisfaction Huddle ({ho.dining_satisfaction_score} pts)"
-        suggested_action = "Review food temperature logs, meal delivery timing, and open guest service requests with executive culinary staff."
-        rationale = f"Dining satisfaction is {ho.dining_satisfaction_score} points and Guest NPS is +{ho.guest_satisfaction_nps}."
-        impact = "Boosts resident dining experience and guest satisfaction ratings."
+    elif item.metric_name == "los_outliers_count":
+        action_title = f"Conduct Interdisciplinary Utilization Review on {int(item.current_value)} Extended-Stay Guests"
+        suggested_action = "Convene structured multi-disciplinary discharge planning huddle to resolve home health, DME, or family placement bottlenecks."
+        rationale = item.evidence_statement
+        impact = "Reduces non-reimbursed length of stay exposure and frees short-stay rehabilitation bed capacity."
+
+    elif item.metric_name == "dining_satisfaction_score":
+        action_title = f"Conduct Culinary Quality and Meal Delivery Audit ({item.current_value} pts)"
+        suggested_action = "Review meal service timing, food temperature logs, and menu choices directly with residents and executive chef."
+        rationale = item.evidence_statement
+        impact = (
+            "Elevates guest dining sentiment and enhances overall hospitality ratings."
+        )
+
+    elif item.metric_name == "guest_satisfaction_nps":
+        action_title = (
+            f"Address Guest Service Feedback to Elevate NPS (+{item.current_value})"
+        )
+        suggested_action = "Audit open guest service requests and conduct executive rounds with guests and families to resolve dissatisfaction drivers."
+        rationale = item.evidence_statement
+        impact = "Strengthens resident experience and family loyalty."
 
     else:
         action_title = f"Review Departmental Operations for {item.domain_display_name}"

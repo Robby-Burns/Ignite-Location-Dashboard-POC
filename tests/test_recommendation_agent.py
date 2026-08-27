@@ -52,6 +52,38 @@ async def test_ac2_5_1_every_recommendation_has_rationale_and_evidence() -> None
 
 
 @pytest.mark.asyncio
+async def test_ac2_5_1_distinct_recommendations_per_metric_no_duplicates() -> None:
+    """AC-2.5.1 / F-1: Verify that multiple attention items in the same domain produce distinct, metric-specific recommendations."""
+    agent = FacilityRecommendationAgent()
+    report = await agent.generate_recommendations(
+        "ignite-oak-brook", scenario="staffing_stress"
+    )
+
+    recs = report.verified_recommendations_summary.recommendations
+    staffing_recs = [r for r in recs if r.domain == "staffing"]
+
+    # In staffing_stress, there are 3 distinct deficits: hppd_actual, open_shifts_count, agency_staff_pct
+    assert len(staffing_recs) >= 3, (
+        f"Expected at least 3 staffing recs, got {len(staffing_recs)}"
+    )
+
+    titles = [r.action_title for r in staffing_recs]
+    # Verify titles are completely distinct (no duplicate canned actions)
+    assert len(set(titles)) == len(titles), (
+        f"Found duplicate titles in staffing recommendations: {titles}"
+    )
+
+    # Verify each specific metric is directly referenced in its dedicated recommendation
+    has_hppd = any("hppd" in t.lower() or "direct nursing" in t.lower() for t in titles)
+    has_shifts = any("open" in t.lower() or "shifts" in t.lower() for t in titles)
+    has_agency = any("agency" in t.lower() for t in titles)
+
+    assert has_hppd, "Missing specific HPPD recommendation"
+    assert has_shifts, "Missing specific open shifts recommendation"
+    assert has_agency, "Missing specific agency reliance recommendation"
+
+
+@pytest.mark.asyncio
 async def test_ac2_5_2_changing_source_data_dynamically_alters_recommendations() -> (
     None
 ):

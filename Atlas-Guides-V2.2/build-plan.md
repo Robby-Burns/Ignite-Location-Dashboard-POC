@@ -52,8 +52,8 @@
 | **2.2** | Explain Metrics and Historical Context | MEDIUM | 2.1 | **STORY_VERIFIED** |
 | **2.3** | Identify Positive Performance | MEDIUM | 2.2 | **STORY_VERIFIED** |
 | **2.4** | Identify Areas Requiring Attention | MEDIUM | 2.2 | **STORY_VERIFIED** |
-| **2.5** | Generate Data-Grounded Recommendations | MEDIUM | 2.4 | **CHECKING_1** |
-| **GATE-2** | Phase 2 Gate | MEDIUM | 2.1 - 2.5 | PENDING |
+| **2.5** | Generate Data-Grounded Recommendations | MEDIUM | 2.4 | **STORY_VERIFIED** |
+| **GATE-2** | Phase 2 Gate | MEDIUM | 2.1 - 2.5 | **PHASE_GATE_PASSED** |
 
 ---
 
