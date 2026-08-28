@@ -286,9 +286,16 @@ class FacilityUnifiedAnalysisAgent:
         self.cache_ttl_seconds = cache_ttl_seconds
         self._cache: dict[str, tuple[float, UnifiedFacilityAnalysisResponse]] = {}
 
-    def clear_cache(self) -> None:
-        """Clear all in-memory cached analyses."""
-        self._cache.clear()
+    def clear_cache(self, facility_id: str | None = None) -> None:
+        """Clear in-memory cached analyses for a specific facility or all."""
+        if facility_id:
+            keys_to_remove = [
+                k for k in self._cache if k.startswith(f"{facility_id}:")
+            ]
+            for k in keys_to_remove:
+                self._cache.pop(k, None)
+        else:
+            self._cache.clear()
 
     async def analyze_facility(
         self,

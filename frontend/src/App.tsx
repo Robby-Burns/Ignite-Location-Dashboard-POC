@@ -28,7 +28,7 @@ export const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<UnifiedFacilityAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isResetting, setIsResetting] = useState(false);
+  const [isUpdatingData, setIsUpdatingData] = useState(false);
 
   const [technicalData, setTechnicalData] = useState<TechnicalArchitectureReport | null>(null);
   const [technicalLoading, setTechnicalLoading] = useState(false);
@@ -54,39 +54,48 @@ export const App: React.FC = () => {
     fetchFacilities();
   }, []);
 
-  const loadDashboard = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadDashboard = useCallback(
+    async (forceRefresh = false) => {
+      setLoading(true);
+      setError(null);
 
-    const params = `facility_id=${selectedFacility}&scenario=${selectedScenario}`;
-    try {
-      // Single unified structured analysis call
-      const res = await axios.get<UnifiedFacilityAnalysisResponse>(
-        `/api/agent/facility-analysis?${params}`,
-      );
-      setAnalysis(res.data);
-    } catch (err: any) {
-      setError(
-        err.response?.data?.detail || err.message || "Failed to fetch facility analysis.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedFacility, selectedScenario]);
+      const params = `facility_id=${selectedFacility}&scenario=${selectedScenario}${forceRefresh ? "&force_refresh=true" : ""}`;
+      try {
+        // Single unified structured analysis call
+        const res = await axios.get<UnifiedFacilityAnalysisResponse>(
+          `/api/agent/facility-analysis?${params}`,
+        );
+        setAnalysis(res.data);
+      } catch (err: any) {
+        setError(
+          err.response?.data?.detail || err.message || "Failed to fetch facility analysis.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectedFacility, selectedScenario],
+  );
 
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
 
-  const handleResetSandbox = async () => {
-    setIsResetting(true);
-    setSelectedFacility("ignite-oak-brook");
-    setSelectedScenario("baseline");
-    setView("dashboard");
+  const handleTryNewFacilityData = async () => {
+    setIsUpdatingData(true);
     try {
-      await loadDashboard();
+      await axios.post(
+        `/api/facilities/${selectedFacility}/try-new-data?scenario=${selectedScenario}`,
+      );
+      await loadDashboard(true);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          "Failed to update synthetic facility data.",
+      );
     } finally {
-      setIsResetting(false);
+      setIsUpdatingData(false);
     }
   };
 
@@ -200,8 +209,8 @@ export const App: React.FC = () => {
         selectedScenario={selectedScenario}
         setSelectedScenario={setSelectedScenario}
         facilityAccent={facilityAccent}
-        onReset={handleResetSandbox}
-        isResetting={isResetting}
+        onTryNewData={handleTryNewFacilityData}
+        isUpdatingData={isUpdatingData}
       />
 
       {/* Main */}

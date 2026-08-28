@@ -20,8 +20,8 @@ interface HeaderProps {
   selectedScenario: string;
   setSelectedScenario: (id: string) => void;
   facilityAccent: FacilityAccent;
-  onReset: () => void;
-  isResetting: boolean;
+  onTryNewData: () => void;
+  isUpdatingData: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,8 +31,8 @@ export const Header: React.FC<HeaderProps> = ({
   selectedScenario,
   setSelectedScenario,
   facilityAccent,
-  onReset,
-  isResetting,
+  onTryNewData,
+  isUpdatingData,
 }) => {
   const accent = scenarioById(selectedScenario);
 
@@ -78,8 +78,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button
-            onClick={onReset}
-            disabled={isResetting}
+            onClick={onTryNewData}
+            disabled={isUpdatingData}
+            title="Change the synthetic facility data in the database and rerun the analysis."
             style={{
               background: "rgba(255, 255, 255, 0.15)",
               border: "1px solid rgba(255, 255, 255, 0.3)",
@@ -90,13 +91,13 @@ export const Header: React.FC<HeaderProps> = ({
               display: "flex",
               alignItems: "center",
               gap: 5,
-              cursor: isResetting ? "not-allowed" : "pointer",
+              cursor: isUpdatingData ? "not-allowed" : "pointer",
               fontWeight: 600,
               transition: "background 0.15s ease",
             }}
           >
-            <RotateCcw size={12} className={isResetting ? "animate-spin" : ""} />
-            {isResetting ? "Resetting Sandbox..." : "Reset Sandbox"}
+            <RotateCcw size={12} className={isUpdatingData ? "animate-spin" : ""} />
+            {isUpdatingData ? "Updating Facility Data..." : "Try New Facility Data"}
           </button>
         </div>
       </div>

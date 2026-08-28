@@ -68,7 +68,8 @@ def init_and_seed_database() -> None:
             # Seed snapshots for all 6 scenarios (30 days each = 180 records per facility)
             snapshot_count = 0
             for scenario in SCENARIOS:
-                dataset = generator.generate_facility_dataset(
+                sc_generator = SyntheticFacilityDataGenerator(seed=42)
+                dataset = sc_generator.generate_facility_dataset(
                     facility_id=facility_id,
                     scenario=scenario,
                     days_history=30,
@@ -99,6 +100,52 @@ def init_and_seed_database() -> None:
             )
 
     logger.info("Database seeding complete for all facilities.")
+
+
+def reset_facility_data(facility_id: str, scenario: str | None = None) -> None:
+    """Reset synthetic snapshots for a facility back to the deterministic initial seed."""
+    init_db()
+    generator = SyntheticFacilityDataGenerator(seed=42)
+    scenarios_to_reset = [scenario] if scenario else SCENARIOS
+
+    with _get_session_factory()() as session:
+        for sc in scenarios_to_reset:
+            # Delete existing snapshots for facility and scenario
+            existing_records = (
+                session.execute(
+                    select(DailySnapshotRecord).where(
+                        DailySnapshotRecord.facility_id == facility_id,
+                        DailySnapshotRecord.scenario_name == sc,
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            for rec in existing_records:
+                session.delete(rec)
+
+            # Re-generate and insert baseline snapshots
+            dataset = generator.generate_facility_dataset(
+                facility_id=facility_id,
+                scenario=sc,
+                days_history=30,
+            )
+            for snap in dataset.history.snapshots:
+                snap_rec = DailySnapshotRecord(
+                    facility_id=facility_id,
+                    snapshot_date=snap.snapshot_date,
+                    scenario_name=sc,
+                    data_json=snap.model_dump(mode="json"),
+                )
+                session.add(snap_rec)
+
+        session.commit()
+
+
+def reset_all_facilities_data() -> None:
+    """Reset all facilities across all scenarios back to deterministic seed."""
+    for fid in FACILITIES:
+        reset_facility_data(fid)
 
 
 if __name__ == "__main__":

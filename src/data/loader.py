@@ -46,6 +46,17 @@ class FacilityDataLoader:
         self.generator = SyntheticFacilityDataGenerator(seed=42)
         self._memory_cache: dict[str, FacilityDataset] = {}
 
+    def clear_cache(self, facility_id: str | None = None) -> None:
+        """Invalidate in-memory cache for a specific facility or all facilities."""
+        if facility_id:
+            keys_to_remove = [
+                k for k in self._memory_cache if k.startswith(f"{facility_id}:")
+            ]
+            for k in keys_to_remove:
+                self._memory_cache.pop(k, None)
+        else:
+            self._memory_cache.clear()
+
     def get_supported_facilities(self) -> list[FacilityMetadata]:
         """Return list of supported facilities."""
         return list(FACILITIES.values())

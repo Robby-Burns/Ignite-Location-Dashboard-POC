@@ -87,6 +87,43 @@ async def get_facility_history(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+from src.data.mutator import mutate_facility_data
+
+
+class TryNewDataResponse(BaseModel):
+    success: bool = True
+    facility_id: str
+    scenario: str
+    snapshot_date: str
+    message: str = "Synthetic facility data successfully updated in database."
+    modified_fields: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post("/facilities/{facility_id}/try-new-data", response_model=TryNewDataResponse)
+async def try_new_facility_data_endpoint(
+    facility_id: str,
+    scenario: str = Query(default="baseline", description="Operational scenario name"),
+) -> TryNewDataResponse:
+    """Mutate actual database records for the current facility to demonstrate dynamic AI analysis."""
+    try:
+        result = mutate_facility_data(facility_id=facility_id, scenario=scenario)
+        # Invalidate in-memory caches
+        mcp_server.data_loader.clear_cache(facility_id)
+        unified_agent.clear_cache(facility_id)
+        return TryNewDataResponse(
+            success=True,
+            facility_id=result["facility_id"],
+            scenario=result["scenario"],
+            snapshot_date=result["snapshot_date"],
+            message=f"Synthetic facility data successfully updated in database for {facility_id}.",
+            modified_fields=result["modified_fields"],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database mutation failed: {e!s}") from e
+
+
 from src.agent.unified_agent import (
     FacilityUnifiedAnalysisAgent,
     UnifiedFacilityAnalysisResponse,
