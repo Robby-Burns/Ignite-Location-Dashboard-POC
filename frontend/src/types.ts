@@ -69,6 +69,7 @@ export interface FacilityBriefReport {
   watch_items: BriefWatchItemCard[];
   action_items: BriefActionItemCard[];
   limitations: BriefLimitations;
+  time_context?: TimeContextMetadata;
   generated_at: string;
 }
 
@@ -337,11 +338,21 @@ export interface UnifiedVitalMetric {
   trend: "UP" | "DOWN" | "STABLE";
 }
 
+export interface TimeContextMetadata {
+  analysis_timestamp: string;
+  analysis_date: string;
+  data_as_of: string;
+  recent_history_window: string;
+  baseline_window: string;
+  days_history: number;
+}
+
 export interface UnifiedFacilityAnalysisResponse {
   facility_id: string;
   facility_name: string;
   scenario: string;
   report_date: string;
+  time_context?: TimeContextMetadata;
   overall_status: "HEALTHY" | "WATCH" | "NEEDS_ATTENTION" | "CRITICAL";
   status_label: string;
   executive_summary: string;

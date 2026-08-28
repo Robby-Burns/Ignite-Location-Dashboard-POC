@@ -77,7 +77,7 @@ class MockDomoMCPClient:
     def get_facility_history(
         self,
         facility_id: str,
-        days_history: int = 30,
+        days_history: int = 90,
         scenario: str = "baseline",
     ) -> FacilityHistoricalSeries:
         """Retrieve facility historical time-series via Mock Domo MCP."""

@@ -22,7 +22,7 @@ const DEFAULT_FACILITIES: FacilityOption[] = [
 export const App: React.FC = () => {
   const [facilities, setFacilities] = useState<FacilityOption[]>(DEFAULT_FACILITIES);
   const [selectedFacility, setSelectedFacility] = useState<string>("ignite-oak-brook");
-  const [selectedScenario, setSelectedScenario] = useState<string>("baseline");
+  const [selectedArea, setSelectedArea] = useState<string>("all");
   const [view, setView] = useState<"dashboard" | "technical">("dashboard");
 
   const [analysis, setAnalysis] = useState<UnifiedFacilityAnalysisResponse | null>(null);
@@ -59,9 +59,9 @@ export const App: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const params = `facility_id=${selectedFacility}&scenario=${selectedScenario}${forceRefresh ? "&force_refresh=true" : ""}`;
+      // Whole-facility analysis call (scenario=baseline, 0 extra calls for area filtering)
+      const params = `facility_id=${selectedFacility}&scenario=baseline${forceRefresh ? "&force_refresh=true" : ""}`;
       try {
-        // Single unified structured analysis call
         const res = await axios.get<UnifiedFacilityAnalysisResponse>(
           `/api/agent/facility-analysis?${params}`,
         );
@@ -74,7 +74,7 @@ export const App: React.FC = () => {
         setLoading(false);
       }
     },
-    [selectedFacility, selectedScenario],
+    [selectedFacility],
   );
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export const App: React.FC = () => {
     setIsUpdatingData(true);
     try {
       await axios.post(
-        `/api/facilities/${selectedFacility}/try-new-data?scenario=${selectedScenario}`,
+        `/api/facilities/${selectedFacility}/try-new-data?scenario=baseline`,
       );
       await loadDashboard(true);
     } catch (err: any) {
@@ -134,6 +134,7 @@ export const App: React.FC = () => {
       positive_highlights: analysis.positive_highlights,
       watch_items: [],
       action_items: [],
+      time_context: analysis.time_context,
       limitations: {
         is_simulated_domo: true,
         data_freshness: analysis.data_freshness,
@@ -206,8 +207,8 @@ export const App: React.FC = () => {
         facilities={facilities}
         selectedFacility={selectedFacility}
         setSelectedFacility={setSelectedFacility}
-        selectedScenario={selectedScenario}
-        setSelectedScenario={setSelectedScenario}
+        selectedArea={selectedArea}
+        setSelectedArea={setSelectedArea}
         facilityAccent={facilityAccent}
         onTryNewData={handleTryNewFacilityData}
         isUpdatingData={isUpdatingData}
@@ -222,12 +223,12 @@ export const App: React.FC = () => {
               findings={findings}
               loading={loading}
               error={error}
-              scenario={selectedScenario}
+              selectedArea={selectedArea}
             />
             <div className="xl:sticky xl:top-[84px]">
               <ExploreAnalysis
                 facilityId={selectedFacility}
-                scenario={selectedScenario}
+                scenario="baseline"
                 questionsData={questionsData}
                 questionsLoading={loading}
                 questionsError={error}

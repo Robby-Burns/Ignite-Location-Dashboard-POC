@@ -225,6 +225,7 @@ class SyntheticFacilityDataGenerator:
         facility_id: str,
         snapshot_date: date,
         day_offset: int = 0,
+        total_days: int = 90,
         scenario: str = "baseline",
     ) -> DailyFacilitySnapshot:
         """Generate a single daily snapshot with facility-specific operational parameters."""
@@ -240,9 +241,9 @@ class SyntheticFacilityDataGenerator:
         daily_jitter = self.rng.randint(-2, 2)
         census_val = max(10, min(capacity, int(base_census + wave + daily_jitter)))
 
-        if scenario == "high_census_strain" and day_offset >= 20:
+        if scenario == "high_census_strain" and day_offset >= total_days - 10:
             census_val = min(capacity, capacity - self.rng.randint(1, 3))
-        elif scenario == "staffing_stress" and day_offset >= 25:
+        elif scenario == "staffing_stress" and day_offset >= total_days - 5:
             census_val = min(capacity, int(capacity * 0.93))
 
         budgeted_census = int(capacity * profile["budgeted_occupancy"])
@@ -277,7 +278,7 @@ class SyntheticFacilityDataGenerator:
         pending_adm = self.rng.randint(1, 4)
         pending_dis = self.rng.randint(1, 4)
 
-        if scenario == "high_census_strain" and day_offset >= 25:
+        if scenario == "high_census_strain" and day_offset >= total_days - 5:
             today_adm += 3
             pending_adm += 4
 
@@ -329,7 +330,7 @@ class SyntheticFacilityDataGenerator:
         mob_lo, mob_hi = profile["mobility_range"]
         mobility_idx = round(self.rng.uniform(mob_lo, mob_hi), 1)
 
-        if scenario == "therapy_disruption" and day_offset >= 24:
+        if scenario == "therapy_disruption" and day_offset >= total_days - 6:
             deliv_min = round(sched_min * 0.78, 1)
             comp_rate = round((deliv_min / sched_min) * 100.0, 1)
             goals_pct = 71.5
@@ -360,7 +361,7 @@ class SyntheticFacilityDataGenerator:
         ag_lo, ag_hi = profile["base_agency_pct"]
         agency_pct = round(self.rng.uniform(ag_lo, ag_hi), 1)
 
-        if scenario == "staffing_stress" and day_offset >= 25:
+        if scenario == "staffing_stress" and day_offset >= total_days - 5:
             actual_hppd = round(target_hppd - 0.50, 2)
             call_ins = 6
             open_shifts = 5
@@ -389,7 +390,7 @@ class SyntheticFacilityDataGenerator:
         de_lo, de_hi = profile["base_denials"]
         denials = self.rng.randint(de_lo, de_hi)
 
-        if scenario == "auth_cliff" and day_offset >= 26:
+        if scenario == "auth_cliff" and day_offset >= total_days - 4:
             exp_48h = 9
             exp_72h = 16
             pending_reauth = 12
@@ -433,7 +434,7 @@ class SyntheticFacilityDataGenerator:
         acute_week = self.rng.randint(aw_lo, aw_hi)
         transfers_by_reason = dict(profile["transfer_reasons"])
 
-        if scenario == "hospital_transfer_spike" and day_offset >= 25:
+        if scenario == "hospital_transfer_spike" and day_offset >= total_days - 5:
             unplanned_30d = 14
             readm_pct = 16.8
             acute_week = 5
@@ -465,12 +466,12 @@ class SyntheticFacilityDataGenerator:
         self,
         facility_id: str = "ignite-oak-brook",
         end_date: date | None = None,
-        days_history: int = 30,
+        days_history: int = 90,
         scenario: str = "baseline",
     ) -> FacilityDataset:
-        """Generate a full facility dataset with 30-day historical time-series."""
+        """Generate a full facility dataset with historical time-series (default 90 days)."""
         if end_date is None:
-            end_date = date(2026, 8, 27)
+            end_date = date.today()
 
         facility = FACILITIES.get(facility_id, FACILITIES["ignite-oak-brook"])
         start_date = end_date - timedelta(days=days_history - 1)
@@ -482,6 +483,7 @@ class SyntheticFacilityDataGenerator:
                 facility_id=facility.facility_id,
                 snapshot_date=curr_date,
                 day_offset=i,
+                total_days=days_history,
                 scenario=scenario,
             )
             snapshots.append(snap)

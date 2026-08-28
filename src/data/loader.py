@@ -74,7 +74,7 @@ class FacilityDataLoader:
         self,
         facility_id: str = "ignite-oak-brook",
         scenario: str = "baseline",
-        days_history: int = 30,
+        days_history: int = 90,
         use_cache: bool = True,
     ) -> FacilityDataset:
         """Load a complete facility dataset from DB first, fall back to generator."""
@@ -133,7 +133,7 @@ class FacilityDataLoader:
                 if not fac_record:
                     return None
 
-                # Load snapshots for this facility and scenario
+                # Load most recent snapshots for this facility and scenario
                 snapshot_records = (
                     session.execute(
                         select(DailySnapshotRecord)
@@ -141,15 +141,18 @@ class FacilityDataLoader:
                             DailySnapshotRecord.facility_id == facility_id,
                             DailySnapshotRecord.scenario_name == scenario,
                         )
-                        .order_by(DailySnapshotRecord.snapshot_date)
+                        .order_by(DailySnapshotRecord.snapshot_date.desc())
                         .limit(days_history)
                     )
                     .scalars()
                     .all()
                 )
 
-                if not snapshot_records or len(snapshot_records) < days_history:
+                if not snapshot_records or len(snapshot_records) < min(30, days_history):
                     return None
+
+                # Reverse to chronological order (oldest to newest)
+                snapshot_records = list(reversed(snapshot_records))
 
                 # Parse snapshots from DB JSON
                 snapshots: list[DailyFacilitySnapshot] = []

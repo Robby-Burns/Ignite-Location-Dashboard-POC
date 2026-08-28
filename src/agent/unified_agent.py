@@ -17,7 +17,7 @@ Separation of Responsibilities:
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -179,6 +179,27 @@ class UnifiedVitalMetric(BaseModel):
     )
 
 
+class TimeContextMetadata(BaseModel):
+    """Explicit runtime temporal boundaries and timestamps."""
+
+    analysis_timestamp: str = Field(
+        ..., description="ISO 8601 timestamp with timezone"
+    )
+    analysis_date: str = Field(
+        ..., description="Current calendar date (YYYY-MM-DD)"
+    )
+    data_as_of: str = Field(
+        ..., description="Latest snapshot date (YYYY-MM-DD)"
+    )
+    recent_history_window: str = Field(
+        ..., description="e.g. '2026-07-30 through 2026-08-28 (30 days)'"
+    )
+    baseline_window: str = Field(
+        ..., description="e.g. '2026-05-30 through 2026-08-28 (90 days)'"
+    )
+    days_history: int = Field(default=90, description="Total days evaluated")
+
+
 class UnifiedFacilityAnalysisResponse(BaseModel):
     """Complete, unified operational analysis response consumed directly by the UI."""
 
@@ -186,6 +207,9 @@ class UnifiedFacilityAnalysisResponse(BaseModel):
     facility_name: str = Field(..., description="Human-friendly facility name")
     scenario: str = Field(default="baseline", description="Operational scenario name")
     report_date: str = Field(..., description="Snapshot date (ISO format)")
+    time_context: TimeContextMetadata = Field(
+        ..., description="Runtime-generated temporal boundaries and data freshness"
+    )
     overall_status: Literal["HEALTHY", "WATCH", "NEEDS_ATTENTION", "CRITICAL"] = Field(
         default="HEALTHY", description="Overall operational health status"
     )
@@ -301,7 +325,7 @@ class FacilityUnifiedAnalysisAgent:
         self,
         facility_id: str = "ignite-oak-brook",
         scenario: str = "baseline",
-        days_history: int = 30,
+        days_history: int = 90,
         force_refresh: bool = False,
     ) -> UnifiedFacilityAnalysisResponse:
         """Execute end-to-end unified facility analysis with in-memory cache and 1 structured LLM call."""
@@ -337,6 +361,22 @@ class FacilityUnifiedAnalysisAgent:
             if fac.facility_id == facility_id:
                 facility_name = fac.facility_name
                 break
+
+        # Dynamic runtime time context
+        data_as_of_date = snapshot.snapshot_date
+        data_as_of_str = data_as_of_date.isoformat()
+        history_start_date = history.start_date
+        total_snapshots = len(history.snapshots)
+        recent_start_date = max(history_start_date, data_as_of_date - timedelta(days=29))
+
+        time_context = TimeContextMetadata(
+            analysis_timestamp=datetime.now(UTC).isoformat(),
+            analysis_date=date.today().isoformat(),
+            data_as_of=data_as_of_str,
+            recent_history_window=f"{recent_start_date.isoformat()} through {data_as_of_str} (30 days)",
+            baseline_window=f"{history_start_date.isoformat()} through {data_as_of_str} ({total_snapshots} days)",
+            days_history=total_snapshots,
+        )
 
         # 2. Compute verified deterministic Python analytics across all 8 domains (1 ms)
         calcs: FacilityCalculations = calculate_facility_metrics(snapshot, history, scenario=scenario)
@@ -375,7 +415,7 @@ class FacilityUnifiedAnalysisAgent:
         )
         self._augment_ground_truth(ground_truth, attention_summary, trends, pos_summary)
 
-        # 5. Formulate concise input facts payload for the single LLM call
+        # 5. Formulate whole-facility facts payload with time context for the single LLM call
         user_prompt = self._build_unified_prompt(
             facility_name=facility_name,
             snapshot=snapshot,
@@ -384,6 +424,7 @@ class FacilityUnifiedAnalysisAgent:
             rec_summary=rec_summary,
             pos_summary=pos_summary,
             trends=trends,
+            time_context=time_context,
         )
 
         # 6. Execute single structured LLM call
@@ -406,6 +447,7 @@ class FacilityUnifiedAnalysisAgent:
                 attention_summary=attention_summary,
                 rec_summary=rec_summary,
                 pos_summary=pos_summary,
+                time_context=time_context,
                 receipt=receipt,
                 reason="Live LLM call was unavailable; displaying validated deterministic analysis.",
             )
@@ -424,6 +466,7 @@ class FacilityUnifiedAnalysisAgent:
             attention_summary=attention_summary,
             rec_summary=rec_summary,
             pos_summary=pos_summary,
+            time_context=time_context,
             llm_output=llm_output,
             ground_truth=ground_truth,
             receipt=receipt,
@@ -514,10 +557,11 @@ class FacilityUnifiedAnalysisAgent:
         rec_summary: FacilityRecommendationsSummary,
         pos_summary: FacilityPositiveHighlightsSummary,
         trends: FacilityTrendCalculations,
+        time_context: TimeContextMetadata,
     ) -> str:
-        """Construct a concise prompt containing key pre-computed facts for the LLM."""
+        """Construct whole-facility prompt containing time context and pre-computed facts across all domains."""
         attention_payload = []
-        for item in attention_summary.attention_items[:4]:
+        for item in attention_summary.attention_items[:6]:
             attention_payload.append(
                 {
                     "id": item.item_id,
@@ -533,7 +577,7 @@ class FacilityUnifiedAnalysisAgent:
             )
 
         pos_payload = []
-        for h in pos_summary.highlights[:3]:
+        for h in pos_summary.highlights[:6]:
             pos_payload.append(
                 {
                     "domain": h.domain,
@@ -544,18 +588,42 @@ class FacilityUnifiedAnalysisAgent:
                 }
             )
 
+        # Key temporal facts across core domains calculated in Python
+        key_trends_payload = {}
+        for k, tr in list(trends.trends.items())[:8]:
+            key_trends_payload[k] = {
+                "current": f"{tr.current_value} {tr.unit}",
+                "rolling_7d_avg": f"{tr.rolling_7d_avg} {tr.unit}",
+                "rolling_30d_avg": f"{tr.rolling_30d_avg} {tr.unit}",
+                "rolling_90d_avg": f"{tr.rolling_90d_avg} {tr.unit}" if tr.rolling_90d_avg is not None else "N/A",
+                "pct_change_7d": f"{tr.pct_change_7d:+}%" if tr.pct_change_7d is not None else "N/A",
+                "trajectory": tr.trajectory_classification,
+            }
+
         payload = {
             "facility_id": snapshot.facility_id,
             "facility_name": facility_name,
             "scenario": attention_summary.scenario,
             "active_attention_conditions": attention_payload,
             "positive_highlights": pos_payload,
-            "top_shifts": trends.meaningful_shifts[:3],
+            "temporal_domain_trends": key_trends_payload,
+            "top_shifts": trends.meaningful_shifts[:4],
         }
 
+        time_header = (
+            "TIME CONTEXT\n"
+            f"Analysis timestamp: {time_context.analysis_timestamp}\n"
+            f"Data as of: {time_context.data_as_of}\n"
+            f"Recent analysis window: {time_context.recent_history_window}\n"
+            f"Historical baseline: {time_context.baseline_window}\n\n"
+            "Instruction: The application is the authoritative source for the current date and analysis timeframe. "
+            "Do not infer the current date from model knowledge.\n\n"
+        )
+
         return (
-            "Analyze and interpret the verified operational telemetry below for facility leadership:\n"
-            + json.dumps(payload, separators=(",", ":"))
+            time_header
+            + "WHOLE-FACILITY OPERATIONAL TELEMETRY & VERIFIED FACTS:\n"
+            + json.dumps(payload, indent=2)
         )
 
     def _augment_ground_truth(
@@ -616,6 +684,7 @@ class FacilityUnifiedAnalysisAgent:
         attention_summary: FacilityAttentionSummary,
         rec_summary: FacilityRecommendationsSummary,
         pos_summary: FacilityPositiveHighlightsSummary,
+        time_context: TimeContextMetadata,
         llm_output: dict[str, Any],
         ground_truth: set[float],
         receipt: LLMExecutionReceipt,
@@ -813,6 +882,7 @@ class FacilityUnifiedAnalysisAgent:
             facility_name=facility_name,
             scenario=scenario,
             report_date=snapshot.snapshot_date.isoformat(),
+            time_context=time_context,
             overall_status=overall_status,
             status_label=status_label,
             executive_summary=exec_summary,
@@ -838,6 +908,7 @@ class FacilityUnifiedAnalysisAgent:
         attention_summary: FacilityAttentionSummary,
         rec_summary: FacilityRecommendationsSummary,
         pos_summary: FacilityPositiveHighlightsSummary,
+        time_context: TimeContextMetadata,
         receipt: LLMExecutionReceipt,
         reason: str,
     ) -> UnifiedFacilityAnalysisResponse:
@@ -954,6 +1025,7 @@ class FacilityUnifiedAnalysisAgent:
             facility_name=facility_name,
             scenario=scenario,
             report_date=snapshot.snapshot_date.isoformat(),
+            time_context=time_context,
             overall_status=overall_status,
             status_label=status_label,
             executive_summary=exec_summary,

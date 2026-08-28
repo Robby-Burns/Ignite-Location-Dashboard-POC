@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Flame,
   AlertTriangle,
@@ -9,7 +9,7 @@ import {
   Minus,
 } from "lucide-react";
 import type { FacilityBriefReport, BriefVitalMetric } from "../types";
-import { Finding, scenarioById } from "../config";
+import { Finding, operationalAreaById, matchesOperationalArea } from "../config";
 import { FindingCard } from "./FindingCard";
 import { PositiveFindingCard } from "./PositiveFindingCard";
 
@@ -18,7 +18,7 @@ interface OperationalDashboardProps {
   findings: Finding[];
   loading: boolean;
   error: string | null;
-  scenario: string;
+  selectedArea: string;
 }
 
 const VITAL_STATUS: Record<
@@ -67,20 +67,32 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
   findings,
   loading,
   error,
-  scenario,
+  selectedArea,
 }) => {
-  const accent = scenarioById(scenario);
+  const areaConfig = operationalAreaById(selectedArea);
   const [activeTab, setActiveTab] = useState<"attention" | "strengths">(
     "attention",
   );
   const [openId, setOpenId] = useState<string | null>(null);
   const [openPositiveIndex, setOpenPositiveIndex] = useState<number | null>(0);
 
+  // Client-side instant lens filtering (0 API calls, 0 LLM calls, 0 network latency)
+  const filteredFindings = useMemo(() => {
+    return findings.filter((f) => matchesOperationalArea(f.domain, selectedArea));
+  }, [findings, selectedArea]);
+
+  const filteredHighlights = useMemo(() => {
+    if (!brief) return [];
+    return brief.positive_highlights.filter((h) =>
+      matchesOperationalArea(h.domain, selectedArea)
+    );
+  }, [brief, selectedArea]);
+
   useEffect(() => {
-    setActiveTab(findings.length > 0 ? "attention" : "strengths");
-    setOpenId(findings.length > 0 ? findings[0].id : null);
+    setActiveTab(filteredFindings.length > 0 ? "attention" : "strengths");
+    setOpenId(filteredFindings.length > 0 ? filteredFindings[0].id : null);
     setOpenPositiveIndex(0);
-  }, [findings]);
+  }, [filteredFindings]);
 
   if (loading) {
     return (
@@ -105,24 +117,24 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
     );
   }
 
-  const { header, vitals, positive_highlights, limitations } = brief;
+  const { header, vitals, limitations, time_context } = brief;
 
   return (
     <div className="space-y-4 min-w-0">
 
-      {/* Vitals strip */}
+      {/* Vitals strip (Always facility-wide) */}
       <div>
-        <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
           <h2 className="flex items-center gap-2 text-[12.5px] font-bold uppercase tracking-wide text-muted">
             <span
               className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: accent.accent }}
+              style={{ backgroundColor: areaConfig.accent }}
             />
-            Facility vitals
+            Facility vitals (Facility-Wide)
           </h2>
-          <span className="text-[11.5px] text-muted flex items-center gap-1.5">
+          <span className="text-[11.5px] text-muted flex items-center gap-1.5 font-medium">
             <Clock className="w-3.5 h-3.5" />
-            Snapshot {header.report_date}
+            {time_context ? `Data through ${time_context.data_as_of} · 30-Day Trend · 90-Day Baseline` : `Snapshot ${header.report_date}`}
           </span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -133,64 +145,78 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
       </div>
 
       {/* Main tabs */}
-      <div className="flex gap-1 bg-surface border border-line rounded-[11px] p-1 w-fit">
-        <button
-          onClick={() => setActiveTab("attention")}
-          className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors"
-          style={
-            activeTab === "attention"
-              ? { backgroundColor: "#1A2332", color: "#fff" }
-              : { color: "#847C6E" }
-          }
-        >
-          Needs attention
-          <span
-            className="text-[10.5px] rounded-full px-1.5 py-px"
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex gap-1 bg-surface border border-line rounded-[11px] p-1 w-fit">
+          <button
+            onClick={() => setActiveTab("attention")}
+            className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors"
             style={
               activeTab === "attention"
-                ? { backgroundColor: "rgba(255,255,255,0.18)", color: "#fff" }
-                : { backgroundColor: "#F0ECE3", color: "#4B5566" }
+                ? { backgroundColor: "#1A2332", color: "#fff" }
+                : { color: "#847C6E" }
             }
           >
-            {findings.length}
-          </span>
-        </button>
-        <button
-          onClick={() => setActiveTab("strengths")}
-          className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors"
-          style={
-            activeTab === "strengths"
-              ? { backgroundColor: "#1A2332", color: "#fff" }
-              : { color: "#847C6E" }
-          }
-        >
-          Going well
-          <span
-            className="text-[10.5px] rounded-full px-1.5 py-px"
+            Needs attention
+            <span
+              className="text-[10.5px] rounded-full px-1.5 py-px"
+              style={
+                activeTab === "attention"
+                  ? { backgroundColor: "rgba(255,255,255,0.18)", color: "#fff" }
+                  : { backgroundColor: "#F0ECE3", color: "#4B5566" }
+              }
+            >
+              {filteredFindings.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("strengths")}
+            className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors"
             style={
               activeTab === "strengths"
-                ? { backgroundColor: "rgba(255,255,255,0.18)", color: "#fff" }
-                : { backgroundColor: "#F0ECE3", color: "#4B5566" }
+                ? { backgroundColor: "#1A2332", color: "#fff" }
+                : { color: "#847C6E" }
             }
           >
-            {positive_highlights.length}
+            Going well
+            <span
+              className="text-[10.5px] rounded-full px-1.5 py-px"
+              style={
+                activeTab === "strengths"
+                  ? { backgroundColor: "rgba(255,255,255,0.18)", color: "#fff" }
+                  : { backgroundColor: "#F0ECE3", color: "#4B5566" }
+              }
+            >
+              {filteredHighlights.length}
+            </span>
+          </button>
+        </div>
+
+        {selectedArea !== "all" && (
+          <span className="text-[12px] text-muted font-medium">
+            Filtering by: <strong className="text-ink">{areaConfig.label}</strong>
           </span>
-        </button>
+        )}
       </div>
 
       {/* Attention panel */}
       {activeTab === "attention" && (
         <div className="space-y-3">
-          {findings.length === 0 && (
+          {filteredFindings.length === 0 && (
             <div className="bg-surface border border-line rounded-[14px] p-10 text-center space-y-2">
               <CheckCircle2 className="w-9 h-9 text-good mx-auto" />
-              <p className="font-bold text-ink">No active operational deficits</p>
-              <p className="text-[13px] text-muted">
-                All core domains are tracking within normal operating parameters.
+              <p className="font-bold text-ink">
+                {selectedArea === "all"
+                  ? "No active operational deficits identified"
+                  : `No active operational concerns identified in ${areaConfig.label}`}
+              </p>
+              <p className="text-[13px] text-muted max-w-md mx-auto">
+                {selectedArea === "all"
+                  ? "All evaluated domains are currently tracking within normal operational parameters."
+                  : `Operations in ${areaConfig.label} are currently tracking within healthy benchmarks based on the available data.`}
               </p>
             </div>
           )}
-          {findings.map((f, i) => (
+          {filteredFindings.map((f, i) => (
             <div key={f.id} id={`finding-${f.id}`}>
               <FindingCard
                 finding={f}
@@ -206,14 +232,16 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
       {/* Strengths panel */}
       {activeTab === "strengths" && (
         <div className="space-y-3">
-          {positive_highlights.length === 0 && (
+          {filteredHighlights.length === 0 && (
             <div className="bg-surface border border-line rounded-[14px] p-10 text-center space-y-2">
               <p className="text-[13px] text-muted italic">
-                No standout positive highlights detected for this scenario.
+                {selectedArea === "all"
+                  ? "No standout positive highlights detected for this evaluation."
+                  : `No standout positive highlights detected for ${areaConfig.label}.`}
               </p>
             </div>
           )}
-          {positive_highlights.map((h, i) => (
+          {filteredHighlights.map((h, i) => (
             <div key={i} id={`positive-highlight-${i}`}>
               <PositiveFindingCard
                 highlight={h}

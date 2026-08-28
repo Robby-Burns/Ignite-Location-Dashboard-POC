@@ -1,7 +1,7 @@
 import React from "react";
-import { Building2, RotateCcw } from "lucide-react";
+import { Building2, Filter, RotateCcw } from "lucide-react";
 import logoImg from "../assets/logo.png";
-import { SCENARIOS, scenarioById, FacilityAccent } from "../config";
+import { OPERATIONAL_AREAS, operationalAreaById, FacilityAccent } from "../config";
 
 const IGNITE_ORANGE = "#DB3C0A";
 const NAVY = "#16233F";
@@ -17,8 +17,8 @@ interface HeaderProps {
   facilities: FacilityOption[];
   selectedFacility: string;
   setSelectedFacility: (id: string) => void;
-  selectedScenario: string;
-  setSelectedScenario: (id: string) => void;
+  selectedArea: string;
+  setSelectedArea: (areaId: string) => void;
   facilityAccent: FacilityAccent;
   onTryNewData: () => void;
   isUpdatingData: boolean;
@@ -28,13 +28,13 @@ export const Header: React.FC<HeaderProps> = ({
   facilities,
   selectedFacility,
   setSelectedFacility,
-  selectedScenario,
-  setSelectedScenario,
+  selectedArea,
+  setSelectedArea,
   facilityAccent,
   onTryNewData,
   isUpdatingData,
 }) => {
-  const accent = scenarioById(selectedScenario);
+  const areaConfig = operationalAreaById(selectedArea);
 
   return (
     <header
@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onTryNewData}
             disabled={isUpdatingData}
-            title="Change the synthetic facility data in the database and rerun the analysis."
+            title="Mutate the underlying facility data in the database and regenerate whole-facility AI analysis."
             style={{
               background: "rgba(255, 255, 255, 0.15)",
               border: "1px solid rgba(255, 255, 255, 0.3)",
@@ -157,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right Side: Only the two dropdowns */}
+        {/* Right Side: Location & Operational Area Filter */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           {/* Location Dropdown */}
           <div
@@ -206,46 +206,39 @@ export const Header: React.FC<HeaderProps> = ({
             </select>
           </div>
 
-          {/* Scenario Dropdown */}
+          {/* Operational Area Filter (Client-Side Lens) */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: 8,
               borderRadius: 8,
-              border: `1px solid ${accent.line}`,
-              background: accent.soft,
+              border: `1px solid ${areaConfig.line}`,
+              background: areaConfig.soft,
               padding: "6px 12px",
               fontSize: 13,
               fontWeight: 500,
             }}
+            title="Operational Area View Filter (Client-side view filter over whole-facility analysis)"
           >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                flexShrink: 0,
-                backgroundColor: accent.accent,
-              }}
-            />
+            <Filter style={{ width: 14, height: 14, color: areaConfig.text, flexShrink: 0 }} />
             <select
-              value={selectedScenario}
-              onChange={(e) => setSelectedScenario(e.target.value)}
+              value={selectedArea}
+              onChange={(e) => setSelectedArea(e.target.value)}
               style={{
                 background: "transparent",
                 fontWeight: 700,
-                color: accent.text,
+                color: areaConfig.text,
                 outline: "none",
                 cursor: "pointer",
                 border: "none",
                 fontSize: 13,
-                maxWidth: 240,
+                maxWidth: 260,
               }}
             >
-              {SCENARIOS.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
+              {OPERATIONAL_AREAS.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
                 </option>
               ))}
             </select>

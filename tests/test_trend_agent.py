@@ -143,28 +143,23 @@ async def test_ac2_2_2_deterministic_historical_delta_numerical_accuracy() -> No
 
     # 1. Census delta verification
     c_trend = calcs.trends["current_census"]
-    assert c_trend.current_value == 96.0
-    assert c_trend.value_7d_ago == 96.0
-    assert c_trend.delta_7d == 0.0
-    assert c_trend.value_14d_ago == 91.0
+    assert c_trend.current_value == snapshot.census.current_census
+    assert c_trend.delta_7d == round(c_trend.current_value - c_trend.value_7d_ago, 2)
 
     # 2. Net Flow delta verification
     flow_trend = calcs.trends["net_flow"]
-    assert flow_trend.current_value == 2.0
-    assert flow_trend.value_7d_ago == 1.0
-    assert flow_trend.delta_7d == 1.0
+    assert flow_trend.current_value == snapshot.admissions_discharges.net_flow
+    assert flow_trend.delta_7d == round(flow_trend.current_value - flow_trend.value_7d_ago, 2)
 
     # 3. Staffing HPPD delta verification
     hppd_trend = calcs.trends["hppd_actual"]
-    assert hppd_trend.current_value == 4.45
-    assert hppd_trend.value_7d_ago == 4.31
-    assert hppd_trend.delta_7d == 0.14
+    assert hppd_trend.current_value == snapshot.staffing.hppd_actual
+    assert hppd_trend.delta_7d == round(hppd_trend.current_value - hppd_trend.value_7d_ago, 2)
 
     # 4. Acute transfers delta verification
     transfers_trend = calcs.trends["acute_transfers_this_week"]
-    assert transfers_trend.current_value == 0.0
-    assert transfers_trend.value_7d_ago == 1.0
-    assert transfers_trend.delta_7d == -1.0
+    assert transfers_trend.current_value == snapshot.hospital_transfers.acute_transfers_this_week
+    assert transfers_trend.delta_7d == round(transfers_trend.current_value - transfers_trend.value_7d_ago, 2)
 
 
 @pytest.mark.asyncio

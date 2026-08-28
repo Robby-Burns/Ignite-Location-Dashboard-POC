@@ -69,10 +69,26 @@ class MetricTrendSummary(BaseModel):
     )
     rolling_7d_avg: float = Field(..., description="7-day rolling average")
     rolling_30d_avg: float = Field(..., description="30-day rolling average")
+    rolling_90d_avg: float | None = Field(
+        default=None, description="90-day baseline average"
+    )
+    delta_90d: float | None = Field(
+        default=None, description="Change relative to 90-day baseline"
+    )
+    pct_change_90d: float | None = Field(
+        default=None, description="Percentage change relative to 90-day baseline"
+    )
+    days_below_target_30d: int | None = Field(
+        default=None, description="Days below target in the past 30 days"
+    )
     min_30d: float = Field(..., description="30-day minimum value")
     max_30d: float = Field(..., description="30-day maximum value")
     trend_direction: Literal["INCREASING", "DECREASING", "STABLE", "VOLATILE"] = Field(
         default="STABLE", description="Overall trajectory direction"
+    )
+    trajectory_classification: str = Field(
+        default="STABLE_ON_TARGET",
+        description="Temporal classification (PERSISTENT_DEFICIT, RECENT_EMERGENCE, IMPROVING, STABLE_ON_TARGET)",
     )
     is_meaningful_shift: bool = Field(
         default=False,
@@ -367,11 +383,22 @@ def calculate_historical_trends(
 
         last_7 = full_series[-7:] if n >= 7 else full_series
         last_30 = full_series[-30:] if n >= 30 else full_series
+        last_90 = full_series[-90:] if n >= 90 else full_series
 
         rolling_7d = round(sum(last_7) / len(last_7), 2)
         rolling_30d = round(sum(last_30) / len(last_30), 2)
+        rolling_90d = round(sum(last_90) / len(last_90), 2) if len(last_90) >= 30 else None
         min_30 = round(min(last_30), 2)
         max_30 = round(max(last_30), 2)
+
+        delta_90d = (
+            round(current_val - rolling_90d, 2) if rolling_90d is not None else None
+        )
+        pct_change_90d = (
+            round((delta_90d / rolling_90d) * 100.0, 1)
+            if (rolling_90d is not None and rolling_90d != 0 and delta_90d is not None)
+            else None
+        )
 
         if delta_7d is not None and abs(delta_7d) >= materiality_delta:
             direction: Literal["INCREASING", "DECREASING", "STABLE", "VOLATILE"] = (
@@ -386,6 +413,16 @@ def calculate_historical_trends(
                 direction = "STABLE"
                 is_meaningful = False
 
+        # Classify trajectory
+        if delta_7d is not None and delta_7d < 0 and delta_30d is not None and delta_30d < 0:
+            traj_class = "PERSISTENT_DEFICIT"
+        elif delta_7d is not None and delta_7d < 0 and (delta_30d is None or delta_30d >= 0):
+            traj_class = "RECENT_EMERGENCE"
+        elif delta_7d is not None and delta_7d > 0:
+            traj_class = "IMPROVING"
+        else:
+            traj_class = "STABLE_ON_TARGET"
+
         pct_7d_str = f"{pct_change_7d:+}%" if pct_change_7d is not None else "N/A"
 
         if delta_7d is not None and val_7d_ago is not None:
@@ -397,6 +434,8 @@ def calculate_historical_trends(
                 shift_text += f" Trailing 14-day value was {val_14d_ago} {unit}."
             if delta_30d is not None and val_30d_ago is not None:
                 shift_text += f" Trailing 30-day change is {delta_30d:+} {unit} (range: {min_30} - {max_30} {unit})."
+            if rolling_90d is not None:
+                shift_text += f" 90-day baseline average is {rolling_90d} {unit}."
         else:
             shift_text = f"{definition.display_name} is currently {current_val} {unit} (insufficient historical records for multi-week trajectory)."
 
@@ -415,9 +454,13 @@ def calculate_historical_trends(
             pct_change_30d=pct_change_30d,
             rolling_7d_avg=rolling_7d,
             rolling_30d_avg=rolling_30d,
+            rolling_90d_avg=rolling_90d,
+            delta_90d=delta_90d,
+            pct_change_90d=pct_change_90d,
             min_30d=min_30,
             max_30d=max_30,
             trend_direction=direction,
+            trajectory_classification=traj_class,
             is_meaningful_shift=is_meaningful,
             shift_summary=shift_text,
         )

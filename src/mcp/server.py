@@ -122,8 +122,8 @@ class MockDomoMCPServer:
                         },
                         "days_history": {
                             "type": "integer",
-                            "description": "Number of daily observations to retrieve (e.g. 7, 14, 30)",
-                            "default": 30,
+                            "description": "Number of daily observations to retrieve (e.g. 7, 14, 30, 90)",
+                            "default": 90,
                         },
                         "scenario": {
                             "type": "string",

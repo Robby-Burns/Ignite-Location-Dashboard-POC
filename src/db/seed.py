@@ -65,14 +65,14 @@ def init_and_seed_database() -> None:
                 session.commit()
                 logger.info("Seeded facility: %s (%s)", meta.facility_name, facility_id)
 
-            # Seed snapshots for all 6 scenarios (30 days each = 180 records per facility)
+            # Seed snapshots for all 6 scenarios (90 days each = 540 records per facility)
             snapshot_count = 0
             for scenario in SCENARIOS:
                 sc_generator = SyntheticFacilityDataGenerator(seed=42)
                 dataset = sc_generator.generate_facility_dataset(
                     facility_id=facility_id,
                     scenario=scenario,
-                    days_history=30,
+                    days_history=90,
                 )
                 for snap in dataset.history.snapshots:
                     existing_snap = session.scalar(
@@ -128,7 +128,7 @@ def reset_facility_data(facility_id: str, scenario: str | None = None) -> None:
             dataset = generator.generate_facility_dataset(
                 facility_id=facility_id,
                 scenario=sc,
-                days_history=30,
+                days_history=90,
             )
             for snap in dataset.history.snapshots:
                 snap_rec = DailySnapshotRecord(

@@ -2,6 +2,101 @@ import type { AttentionAreaItem, OperationalRecommendation } from "./types";
 
 export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
+export interface OperationalAreaConfig {
+  id: string;
+  label: string;
+  shortLabel: string;
+  domains: string[];
+  accent: string;
+  soft: string;
+  line: string;
+  text: string;
+}
+
+export const OPERATIONAL_AREAS: OperationalAreaConfig[] = [
+  {
+    id: "all",
+    label: "All Areas (Facility-Wide)",
+    shortLabel: "All Areas",
+    domains: [],
+    accent: "#16233F",
+    soft: "#F0F4F8",
+    line: "#D2D9E2",
+    text: "#16233F",
+  },
+  {
+    id: "staffing",
+    label: "Nursing & Staffing",
+    shortLabel: "Nursing & Staffing",
+    domains: ["staffing"],
+    accent: "#E8622C",
+    soft: "#FDEEE6",
+    line: "#F3CBB4",
+    text: "#C2410C",
+  },
+  {
+    id: "hospital_transfers",
+    label: "Clinical & Hospital Transfers",
+    shortLabel: "Clinical & Transfers",
+    domains: ["hospital_transfers", "clinical"],
+    accent: "#C4432B",
+    soft: "#FBEAE5",
+    line: "#EFC0B2",
+    text: "#9A2C1B",
+  },
+  {
+    id: "therapy",
+    label: "Therapy & Rehabilitation",
+    shortLabel: "Therapy & Rehab",
+    domains: ["therapy"],
+    accent: "#0E7490",
+    soft: "#E5F4F8",
+    line: "#BBDDE6",
+    text: "#0A5A70",
+  },
+  {
+    id: "census",
+    label: "Census, Capacity & Flow",
+    shortLabel: "Census & Capacity",
+    domains: ["census", "admissions_discharges", "length_of_stay"],
+    accent: "#B17A1A",
+    soft: "#FBF2DF",
+    line: "#EBD69E",
+    text: "#8A5C10",
+  },
+  {
+    id: "hospitality",
+    label: "Hospitality & Guest Services",
+    shortLabel: "Hospitality",
+    domains: ["hospitality"],
+    accent: "#2F7D5C",
+    soft: "#E9F3EE",
+    line: "#BFDBCC",
+    text: "#1F5C41",
+  },
+  {
+    id: "payer_auth",
+    label: "Authorizations & Managed Care",
+    shortLabel: "Authorizations",
+    domains: ["payer_auth", "payer"],
+    accent: "#7C5CD6",
+    soft: "#F1ECFB",
+    line: "#DCD0F5",
+    text: "#5B3FA6",
+  },
+];
+
+export function operationalAreaById(id: string): OperationalAreaConfig {
+  return OPERATIONAL_AREAS.find((a) => a.id === id) ?? OPERATIONAL_AREAS[0];
+}
+
+export function matchesOperationalArea(domain: string, areaId: string): boolean {
+  if (!areaId || areaId === "all") return true;
+  const area = operationalAreaById(areaId);
+  const normalized = (domain || "").toLowerCase().trim();
+  return area.domains.some((d) => normalized.includes(d) || d.includes(normalized));
+}
+
 export interface ScenarioConfig {
   id: string;
   label: string;

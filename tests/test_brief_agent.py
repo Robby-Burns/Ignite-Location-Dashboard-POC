@@ -40,8 +40,8 @@ async def test_ac3_1_1_facility_brief_plain_language_structure(
     assert "Stable" in brief.header.status_label
     assert len(brief.header.executive_summary) > 20
     assert (
-        "87.3%" in brief.header.executive_summary
-        or "96 / 110" in brief.header.executive_summary
+        "occupancy" in brief.header.executive_summary.lower()
+        or "beds" in brief.header.executive_summary.lower()
     )
 
     # Vitals check

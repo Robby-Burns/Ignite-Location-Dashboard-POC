@@ -139,7 +139,7 @@ async def analyze_facility_unified_endpoint(
     ),
     scenario: str = Query(default="baseline", description="Operational scenario name"),
     days_history: int = Query(
-        default=30, ge=1, le=365, description="Historical observation days"
+        default=90, ge=1, le=365, description="Historical observation days"
     ),
     force_refresh: bool = Query(
         default=False, description="Whether to bypass in-memory cache"
