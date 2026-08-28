@@ -13,10 +13,12 @@ import {
 import { FacilityBriefView } from "./components/FacilityBriefView";
 import { WhatItMeansView } from "./components/WhatItMeansView";
 import { RecommendationsView } from "./components/RecommendationsView";
+import { TechnicalView } from "./components/TechnicalView";
 import { 
   FacilityBriefReport, 
   FacilityTrendExplanationReport,
-  RecommendationReport 
+  RecommendationReport,
+  TechnicalArchitectureReport 
 } from "./types";
 
 interface FacilityOption {
@@ -59,6 +61,11 @@ export const App: React.FC = () => {
   const [recommendationsData, setRecommendationsData] = useState<RecommendationReport | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState<boolean>(true);
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
+
+  // Technical Architecture Data State (Story 3.4)
+  const [technicalData, setTechnicalData] = useState<TechnicalArchitectureReport | null>(null);
+  const [technicalLoading, setTechnicalLoading] = useState<boolean>(true);
+  const [technicalError, setTechnicalError] = useState<string | null>(null);
 
   // Fetch available facilities dynamically from data source
   useEffect(() => {
@@ -125,16 +132,33 @@ export const App: React.FC = () => {
     }
   };
 
+  const fetchTechnicalArchitecture = async () => {
+    setTechnicalLoading(true);
+    setTechnicalError(null);
+    try {
+      const response = await axios.get<TechnicalArchitectureReport>(
+        `/api/agent/technical-architecture`
+      );
+      setTechnicalData(response.data);
+    } catch (err: any) {
+      setTechnicalError(err.response?.data?.detail || err.message || "Failed to fetch technical architecture.");
+    } finally {
+      setTechnicalLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchBrief();
     fetchTrends();
     fetchRecommendations();
+    fetchTechnicalArchitecture();
   }, [selectedFacility, selectedScenario]);
 
   const handleRefreshAll = () => {
     fetchBrief();
     fetchTrends();
     fetchRecommendations();
+    fetchTechnicalArchitecture();
   };
 
   return (
@@ -194,7 +218,7 @@ export const App: React.FC = () => {
                 className="p-2 text-slate-500 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-colors"
                 title="Refresh Briefing, Trends, and Recommendations"
               >
-                <RotateCw className={`w-4 h-4 ${briefLoading || trendLoading || recommendationsLoading ? "animate-spin text-orange-600" : ""}`} />
+                <RotateCw className={`w-4 h-4 ${briefLoading || trendLoading || recommendationsLoading || technicalLoading ? "animate-spin text-orange-600" : ""}`} />
               </button>
             </div>
           </div>
@@ -279,13 +303,7 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === "technical" && (
-          <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-4 shadow-xs">
-            <Layers className="w-12 h-12 text-purple-500 mx-auto" />
-            <h3 className="text-xl font-bold text-slate-900">CIO & Technical Architecture (Story 3.4)</h3>
-            <p className="text-sm text-slate-600 max-w-lg mx-auto">
-              Transparent data flow diagrams, operational telemetry receipts, mathematical verification engines, and model audit receipts will be presented here.
-            </p>
-          </div>
+          <TechnicalView data={technicalData} loading={technicalLoading} error={technicalError} />
         )}
       </main>
 

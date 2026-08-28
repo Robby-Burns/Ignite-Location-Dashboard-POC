@@ -169,3 +169,32 @@ export interface RecommendationReport {
   data_limitations_and_uncertainty: string;
   generated_at: string;
 }
+
+export interface ArchitectureLayer {
+  name: string;
+  description: string;
+  components: string[];
+  is_simulated: boolean;
+}
+
+export interface DataFlowStep {
+  step: number;
+  name: string;
+  description: string;
+  source_component: string;
+  output_component: string;
+}
+
+export interface TechnicalArchitectureReport {
+  report_title: string;
+  overview: string;
+  data_source: ArchitectureLayer;
+  numerical_analysis: ArchitectureLayer;
+  ai_interpretation: ArchitectureLayer;
+  evidence_grounding: ArchitectureLayer;
+  data_flow: DataFlowStep[];
+  separation_of_responsibilities: Record<string, string>;
+  limitations: string[];
+  future_integration: string;
+  disclaimers: string[];
+}
