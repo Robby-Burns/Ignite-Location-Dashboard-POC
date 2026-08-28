@@ -1,0 +1,41 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+*.egg-info
+dist
+build
+
+# Node
+frontend/node_modules
+frontend/.cache
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Environment (use Railway env vars)
+.env
+
+# Database
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+.pytest_cache
+.coverage
+htmlcov
+
+# Documentation (not needed at runtime)
+*.md
+!README.md
