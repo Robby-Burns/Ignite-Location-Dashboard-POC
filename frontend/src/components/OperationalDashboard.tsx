@@ -12,6 +12,7 @@ import {
 import type { FacilityBriefReport, BriefVitalMetric } from "../types";
 import { Finding, scenarioById } from "../config";
 import { FindingCard } from "./FindingCard";
+import { PositiveFindingCard } from "./PositiveFindingCard";
 
 interface OperationalDashboardProps {
   brief: FacilityBriefReport | null;
@@ -91,10 +92,12 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
     "attention",
   );
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openPositiveIndex, setOpenPositiveIndex] = useState<number | null>(0);
 
   useEffect(() => {
     setActiveTab(findings.length > 0 ? "attention" : "strengths");
     setOpenId(findings.length > 0 ? findings[0].id : null);
+    setOpenPositiveIndex(0);
   }, [findings]);
 
   if (loading) {
@@ -299,27 +302,24 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
 
       {/* Strengths panel */}
       {activeTab === "strengths" && (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {positive_highlights.length === 0 && (
-            <p className="text-[13px] text-muted italic">
-              No standout positive highlights detected for this scenario.
-            </p>
+            <div className="bg-surface border border-line rounded-[14px] p-10 text-center space-y-2">
+              <p className="text-[13px] text-muted italic">
+                No standout positive highlights detected for this scenario.
+              </p>
+            </div>
           )}
           {positive_highlights.map((h, i) => (
-            <div
-              key={i}
-              className="bg-surface border border-line rounded-[14px] shadow-card px-4 py-3.5 flex items-center gap-3.5"
-            >
-              <span className="w-[30px] h-[30px] rounded-[9px] bg-good-soft text-good flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="w-[15px] h-[15px]" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-[14px] text-ink">{h.title}</p>
-                <p className="text-[12.5px] text-muted">{h.domain}</p>
-              </div>
-              <span className="font-display font-extrabold text-[15.5px] text-good num whitespace-nowrap">
-                {h.supporting_metric}
-              </span>
+            <div key={i} id={`positive-highlight-${i}`}>
+              <PositiveFindingCard
+                highlight={h}
+                index={i}
+                open={openPositiveIndex === i}
+                onToggle={() =>
+                  setOpenPositiveIndex(openPositiveIndex === i ? null : i)
+                }
+              />
             </div>
           ))}
         </div>

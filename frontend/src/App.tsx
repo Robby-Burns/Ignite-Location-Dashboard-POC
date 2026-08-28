@@ -17,7 +17,7 @@ import {
   FollowUpQuestionReport,
   TechnicalArchitectureReport,
 } from "./types";
-import { SCENARIOS, scenarioById, buildFindings } from "./config";
+import { SCENARIOS, scenarioById, buildFindings, facilityAccentById } from "./config";
 
 interface FacilityOption {
   id: string;
@@ -56,6 +56,7 @@ export const App: React.FC = () => {
   );
 
   const accent = scenarioById(selectedScenario);
+  const facilityAccent = facilityAccentById(selectedFacility);
 
   useEffect(() => {
     const fetchFacilities = async () => {
@@ -153,6 +154,13 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper flex flex-col">
+      {/* Location color strip */}
+      <div
+        className="fixed inset-y-0 left-0 w-1.5 z-50"
+        style={{ backgroundColor: facilityAccent.color }}
+        aria-hidden="true"
+      />
+
       {/* Header */}
       <header className="bg-surface border-b border-line sticky top-0 z-40">
         <div className="max-w-[1440px] mx-auto px-5 sm:px-7 py-3.5">
@@ -169,6 +177,9 @@ export const App: React.FC = () => {
                 <p className="text-[11.5px] text-muted leading-none mt-0.5">
                   Operational Decision Support
                 </p>
+                <p className="text-[10px] font-bold uppercase tracking-wider leading-none mt-1" style={{ color: facilityAccent.color }}>
+                  Prepared for Robby Burns Interview
+                </p>
               </div>
             </div>
 
@@ -176,7 +187,10 @@ export const App: React.FC = () => {
             <div className="flex items-center gap-2.5 flex-wrap">
               {/* Facility selector */}
               <div className="flex items-center gap-2 bg-surface border border-line rounded-[10px] px-3 py-2 text-[13px] font-medium text-ink-soft">
-                <span className="w-1.5 h-1.5 rounded-full bg-flame flex-shrink-0" />
+                <span
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: facilityAccent.color }}
+                />
                 <Building2 className="w-4 h-4 text-muted flex-shrink-0" />
                 <select
                   value={selectedFacility}

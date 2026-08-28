@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   ChevronRight,
   RotateCw,
-  Bot,
   User,
   Loader2,
 } from "lucide-react";
@@ -43,12 +42,13 @@ export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   const accent = scenarioById(scenario);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = bodyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages, isSending]);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
     <aside className="relative">
       <div
         className={`bg-surface border border-line rounded-[14px] shadow-card flex flex-col overflow-hidden ${
-          collapsed ? "" : "max-h-[calc(100vh-40px)]"
+          collapsed ? "" : "max-h-[calc(100vh-40px)] xl:h-[calc(100vh-104px)]"
         }`}
       >
         {/* Head */}
@@ -121,7 +121,10 @@ export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
         {!collapsed && (
           <>
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 min-h-[200px]">
+            <div
+              ref={bodyRef}
+              className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 min-h-0 max-h-[440px] xl:max-h-none"
+            >
               <p className="text-[12.5px] text-muted">
                 Ask about what the agent found, why it matters, and what's
                 driving it.
@@ -210,8 +213,12 @@ export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
                       className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       {msg.role === "assistant" && (
-                        <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accent.soft }}>
-                          <Bot className="w-3.5 h-3.5" style={{ color: accent.text }} />
+                        <span className="w-7 h-7 rounded-full overflow-hidden bg-line-soft flex items-center justify-center flex-shrink-0">
+                          <img
+                            src="/avatar.jpg"
+                            alt="Ignite assistant"
+                            className="w-full h-full object-cover"
+                          />
                         </span>
                       )}
                       <div
@@ -238,8 +245,12 @@ export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
 
                   {isSending && (
                     <div className="flex gap-2.5 justify-start">
-                      <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: accent.soft }}>
-                        <Bot className="w-3.5 h-3.5" style={{ color: accent.text }} />
+                      <span className="w-7 h-7 rounded-full overflow-hidden bg-line-soft flex items-center justify-center flex-shrink-0">
+                        <img
+                          src="/avatar.jpg"
+                          alt="Ignite assistant"
+                          className="w-full h-full object-cover"
+                        />
                       </span>
                       <div className="bg-paper border border-line rounded-xl rounded-bl-md px-3 py-2 flex items-center gap-2">
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-muted" />
@@ -247,7 +258,6 @@ export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
                       </div>
                     </div>
                   )}
-                  <div ref={messagesEndRef} />
                 </div>
               )}
 

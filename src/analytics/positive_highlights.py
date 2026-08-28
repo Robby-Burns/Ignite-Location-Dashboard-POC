@@ -36,7 +36,15 @@ ACUTE_TRANSFERS_TARGET: int = 2
 
 
 class PositiveHighlight(BaseModel):
-    """Grounded operational highlight meeting or exceeding target benchmarks (AC-2.3.1)."""
+    """Grounded operational highlight meeting or exceeding target benchmarks (AC-2.3.1).
+
+    Each highlight includes a5-section analysis:
+    1. What's happening (evidence_statement)
+    2. Why it matters (operational_impact)
+    3. What's driving it (driving_factors — only if data supports)
+    4. What we could learn (lessons_learned)
+    5. Evidence (evidence_statement + supporting_metrics)
+    """
 
     highlight_id: str = Field(..., description="Unique highlight identifier")
     domain: str = Field(..., description="Operational domain")
@@ -63,6 +71,23 @@ class PositiveHighlight(BaseModel):
     operational_impact: str = Field(
         ...,
         description="Why this positive performance matters to guests, quality, or finances",
+    )
+    driving_factors: str = Field(
+        default="",
+        description=(
+            "What is driving this positive performance, if supported by available data. "
+            "If the data does not explain why, state that the cause cannot be determined from available data."
+        ),
+    )
+    lessons_learned: str = Field(
+        default="",
+        description=(
+            "What leadership could learn from this or how to maintain/replicate it."
+        ),
+    )
+    supporting_metrics: list[str] = Field(
+        default_factory=list,
+        description="Specific metric values supporting this positive finding",
     )
 
 
@@ -103,10 +128,19 @@ def evaluate_positive_highlights(
     highlights: list[PositiveHighlight] = []
     occ_trend = trends.trends.get("occupancy_rate_pct")
 
+    # Unpack domain snapshot objects
+    c = snapshot.census
+    ad = snapshot.admissions_discharges
+    los = snapshot.length_of_stay
+    st = snapshot.staffing
+    th = snapshot.therapy
+    pa = snapshot.payer_auth
+    ho = snapshot.hospitality
+    ht = snapshot.hospital_transfers
+
     # ---------------------------------------------------------
     # 1. CENSUS & OCCUPANCY DOMAIN
     # ---------------------------------------------------------
-    c = snapshot.census
     if c.occupancy_rate_pct >= OCCUPANCY_POSITIVE_THRESHOLD_PCT:
         strength: Literal["HIGH", "MEDIUM", "LOW"] = (
             "HIGH" if c.occupancy_rate_pct >= 90.0 else "MEDIUM"
@@ -131,6 +165,20 @@ def evaluate_positive_highlights(
                     f"Occupancy rate is {c.occupancy_rate_pct}%, meeting or exceeding the healthy operational target of {OCCUPANCY_POSITIVE_THRESHOLD_PCT}%."
                 ),
                 operational_impact="Supports strong daily operating revenue and optimal fixed-cost absorption across facility departments.",
+                driving_factors=(
+                    f"Census is {c.current_census} out of {c.total_capacity} beds with {c.available_beds} available. "
+                    f"Previous day census was {c.previous_day_census}, previous week was {c.previous_week_census}. "
+                    "The specific drivers of occupancy performance cannot be determined from the available snapshot data alone."
+                ),
+                lessons_learned=(
+                    "Consider identifying which referral sources and hospital partnerships are contributing to strong census "
+                    "and whether those relationships can be strengthened or replicated at other facilities."
+                ),
+                supporting_metrics=[
+                    f"Current census: {c.current_census}/{c.total_capacity}",
+                    f"Available beds: {c.available_beds}",
+                    f"Budgeted target: {c.budgeted_target_census}",
+                ],
             )
         )
 
@@ -153,13 +201,24 @@ def evaluate_positive_highlights(
                     f"Occupancy increased by +{occ_trend.delta_7d}% over the trailing 7 days (from {occ_trend.value_7d_ago}% to {c.occupancy_rate_pct}%)."
                 ),
                 operational_impact="Reflects positive patient throughput and effective hospital intake coordination.",
+                driving_factors=(
+                    f"7-day admissions total {ad.rolling_7d_admissions} vs {ad.rolling_7d_discharges} discharges. "
+                    "The specific referral or discharge factors driving the census increase cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Sustained census growth suggests intake processes are working well. "
+                    "Consider monitoring whether this trajectory continues and what operational factors are contributing."
+                ),
+                supporting_metrics=[
+                    f"7-day occupancy change: +{occ_trend.delta_7d}%",
+                    f"Current: {c.occupancy_rate_pct}%, 7 days ago: {occ_trend.value_7d_ago}%",
+                ],
             )
         )
 
     # ---------------------------------------------------------
     # 2. ADMISSIONS & DISCHARGES DOMAIN
     # ---------------------------------------------------------
-    ad = snapshot.admissions_discharges
     if ad.net_flow > 0:
         highlights.append(
             PositiveHighlight(
@@ -177,13 +236,26 @@ def evaluate_positive_highlights(
                     f"Net patient flow today is +{ad.net_flow} guests ({ad.today_admissions} admissions vs {ad.today_discharges} discharges)."
                 ),
                 operational_impact="Maintains upward census trajectory and reflects healthy community referral demand.",
+                driving_factors=(
+                    f"Today: {ad.today_admissions} admissions, {ad.today_discharges} discharges. "
+                    f"Rolling 7-day: {ad.rolling_7d_admissions} admissions vs {ad.rolling_7d_discharges} discharges. "
+                    f"Pending pipeline: {ad.pending_admissions} intakes, {ad.pending_discharges} pending discharges. "
+                    "The specific referral sources or discharge factors driving positive flow cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Positive net flow supports census stability. Consider tracking which referral channels "
+                    "are producing the strongest intake volume and whether discharge planning can be optimized to maintain throughput."
+                ),
+                supporting_metrics=[
+                    f"Admissions: {ad.today_admissions}, Discharges: {ad.today_discharges}",
+                    f"7-day rolling: {ad.rolling_7d_admissions} adm / {ad.rolling_7d_discharges} dis",
+                ],
             )
         )
 
     # ---------------------------------------------------------
     # 3. LENGTH OF STAY DOMAIN
     # ---------------------------------------------------------
-    los = snapshot.length_of_stay
     if 20.0 <= los.average_los_days <= 24.0:
         highlights.append(
             PositiveHighlight(
@@ -201,13 +273,24 @@ def evaluate_positive_highlights(
                     f"Average length of stay of {los.average_los_days} days is aligned with optimal short-stay rehabilitation throughput targets (20-24 days)."
                 ),
                 operational_impact="Ensures patients complete full clinical rehabilitation episodes without exceeding insurance-authorized periods.",
+                driving_factors=(
+                    f"Short-stay patients: {los.short_stay_count}, long-stay: {los.long_stay_count}, outliers: {los.los_outliers_count}. "
+                    "The specific clinical or operational factors keeping LOS within target cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Optimal LOS suggests effective discharge planning and therapy progression. "
+                    "Consider documenting the discharge coordination practices that are keeping LOS on target."
+                ),
+                supporting_metrics=[
+                    f"Average LOS: {los.average_los_days} days (target: {los.target_los_days})",
+                    f"Short-stay: {los.short_stay_count}, Long-stay: {los.long_stay_count}",
+                ],
             )
         )
 
     # ---------------------------------------------------------
     # 4. NURSING STAFFING & OPERATIONS DOMAIN
     # ---------------------------------------------------------
-    st = snapshot.staffing
     if st.hppd_actual >= HPPD_BUDGET_TARGET:
         highlights.append(
             PositiveHighlight(
@@ -227,6 +310,19 @@ def evaluate_positive_highlights(
                     f"Actual direct nursing care is {st.hppd_actual} HPPD, meeting or exceeding the budgeted care target of {HPPD_BUDGET_TARGET} HPPD."
                 ),
                 operational_impact="Ensures robust bedside care continuity, clinical safety compliance, and guest attention.",
+                driving_factors=(
+                    f"RN hours: {st.rn_hours_actual}, LPN: {st.lpn_hours_actual}, CNA: {st.cna_hours_actual}. "
+                    f"Call-ins: {st.call_in_absences_count}, open shifts: {st.open_shifts_count}, overtime: {st.overtime_hours} hrs. "
+                    "The specific scheduling or staffing practices driving strong HPPD cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Strong HPPD indicates adequate bedside coverage. Consider identifying which scheduling practices, "
+                    "staffing ratios, or retention strategies are contributing and whether they can be sustained."
+                ),
+                supporting_metrics=[
+                    f"HPPD: {st.hppd_actual} (target: {st.hppd_budgeted_target})",
+                    f"RN: {st.rn_hours_actual}h, LPN: {st.lpn_hours_actual}h, CNA: {st.cna_hours_actual}h",
+                ],
             )
         )
 
@@ -247,6 +343,19 @@ def evaluate_positive_highlights(
                     f"Agency staffing utilization is low at {st.agency_staff_pct}%, well below the industry {AGENCY_BUDGET_TARGET_PCT}% threshold."
                 ),
                 operational_impact="Significantly controls premium labor expenses while maintaining permanent team cohesion and familiarity with guests.",
+                driving_factors=(
+                    f"Open shifts: {st.open_shifts_count}, call-ins: {st.call_in_absences_count}, overtime: {st.overtime_hours} hrs. "
+                    "Low agency usage suggests strong permanent staff retention and adequate internal coverage. "
+                    "The specific retention or recruitment practices driving this cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Low agency usage is a significant cost advantage. Consider documenting retention practices, "
+                    "compensation structures, or team culture elements that contribute to staff stability."
+                ),
+                supporting_metrics=[
+                    f"Agency: {st.agency_staff_pct}% (target: <{AGENCY_BUDGET_TARGET_PCT}%)",
+                    f"Open shifts: {st.open_shifts_count}, Overtime: {st.overtime_hours} hrs",
+                ],
             )
         )
 
@@ -267,13 +376,24 @@ def evaluate_positive_highlights(
                     f"Only {st.open_shifts_count} open nursing shifts recorded across all shifts today."
                 ),
                 operational_impact="Reduces overtime stress and ensures seamless shift coverage.",
+                driving_factors=(
+                    f"Call-ins today: {st.call_in_absences_count}, overtime: {st.overtime_hours} hrs. "
+                    "The specific scheduling or staffing practices keeping open shifts low cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Low open shifts indicate effective shift planning. Consider whether scheduling practices, "
+                    "PRN pool utilization, or advance planning are contributing factors worth replicating."
+                ),
+                supporting_metrics=[
+                    f"Open shifts: {st.open_shifts_count} (target: ≤{OPEN_SHIFTS_TARGET})",
+                    f"Call-ins: {st.call_in_absences_count}",
+                ],
             )
         )
 
     # ---------------------------------------------------------
     # 5. THERAPY REHABILITATION DELIVERY DOMAIN
     # ---------------------------------------------------------
-    th = snapshot.therapy
     if th.treatment_completion_rate_pct >= THERAPY_COMPLETION_TARGET_PCT:
         strength_th: Literal["HIGH", "MEDIUM", "LOW"] = (
             "HIGH" if th.treatment_completion_rate_pct >= 95.0 else "MEDIUM"
@@ -298,13 +418,27 @@ def evaluate_positive_highlights(
                     f"Therapy treatment completion rate is {th.treatment_completion_rate_pct}%, meeting or exceeding the {THERAPY_COMPLETION_TARGET_PCT}% operational benchmark."
                 ),
                 operational_impact="Accelerates patient functional recovery, shortens length of stay, and complies with Medicare treatment expectations.",
+                driving_factors=(
+                    f"Delivered {th.avg_daily_treatment_minutes_delivered} min/day vs {th.avg_daily_treatment_minutes_scheduled} min/day scheduled. "
+                    f"Weekly goals met: {th.patients_meeting_weekly_goals_pct}%, patients on hold: {th.patients_on_therapy_hold}, mobility index: {th.functional_mobility_gain_index}. "
+                    "The specific therapist scheduling, patient engagement, or clinical coordination practices driving strong completion cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Consider identifying and preserving the interdisciplinary scheduling and patient engagement practices "
+                    "contributing to strong participation and determining whether they can be applied elsewhere."
+                ),
+                supporting_metrics=[
+                    f"Completion: {th.treatment_completion_rate_pct}% (target: {THERAPY_COMPLETION_TARGET_PCT}%)",
+                    f"Delivered: {th.avg_daily_treatment_minutes_delivered} min/day",
+                    f"Goals met: {th.patients_meeting_weekly_goals_pct}%",
+                    f"Holds: {th.patients_on_therapy_hold}",
+                ],
             )
         )
 
     # ---------------------------------------------------------
     # 6. PAYER MIX & AUTHORIZATIONS DOMAIN
     # ---------------------------------------------------------
-    pa = snapshot.payer_auth
     if pa.expiring_authorizations_48h <= AUTH_EXPIRING_TARGET:
         highlights.append(
             PositiveHighlight(
@@ -322,13 +456,26 @@ def evaluate_positive_highlights(
                     f"Only {pa.expiring_authorizations_48h} authorizations are expiring within the next 48 hours."
                 ),
                 operational_impact="Minimizes financial coverage cliff risk and billing claim denials.",
+                driving_factors=(
+                    f"Expiring in 72h: {pa.expiring_authorizations_72h}, pending reauthorizations: {pa.pending_reauthorizations_count}, "
+                    f"denials pending appeal: {pa.auth_denials_pending_appeal_count}. "
+                    "The specific case management workflows or payer turnaround factors keeping expirations low cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Consider maintaining the proactive re-authorization review cycle and timely clinical documentation submissions with commercial and Managed Care payers."
+                ),
+                supporting_metrics=[
+                    f"Expiring in 48h: {pa.expiring_authorizations_48h} (target: ≤{AUTH_EXPIRING_TARGET})",
+                    f"Expiring in 72h: {pa.expiring_authorizations_72h}",
+                    f"Pending re-auth: {pa.pending_reauthorizations_count}",
+                    f"Denials on appeal: {pa.auth_denials_pending_appeal_count}",
+                ],
             )
         )
 
     # ---------------------------------------------------------
     # 7. HOSPITALITY & GUEST EXPERIENCE DOMAIN
     # ---------------------------------------------------------
-    ho = snapshot.hospitality
     if ho.dining_satisfaction_score >= DINING_SATISFACTION_TARGET:
         category_dining: Literal["EXEMPLARY_ACHIEVEMENT", "BENCHMARK_EXCEEDED"] = (
             "EXEMPLARY_ACHIEVEMENT"
@@ -356,6 +503,20 @@ def evaluate_positive_highlights(
                     f"Resort dining satisfaction score is {ho.dining_satisfaction_score} points, surpassing the {DINING_SATISFACTION_TARGET} target."
                 ),
                 operational_impact="Core driver of Ignite's luxury resort brand reputation, guest morale, and family word-of-mouth recommendations.",
+                driving_factors=(
+                    f"Room comfort score: {ho.cleanliness_room_comfort_score} pts, open service requests: {ho.open_guest_service_requests}, "
+                    f"avg resolution: {ho.avg_request_resolution_hours} hrs. "
+                    "The specific culinary presentation, menu choices, or dining service practices driving high satisfaction cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Consider identifying culinary team practices, guest preference tracking, or daily meal presentation standards "
+                    "that contribute to dining scores and sustaining them across meal shifts."
+                ),
+                supporting_metrics=[
+                    f"Dining score: {ho.dining_satisfaction_score} pts (target: {DINING_SATISFACTION_TARGET} pts)",
+                    f"Room comfort: {ho.cleanliness_room_comfort_score} pts",
+                    f"Open requests: {ho.open_guest_service_requests}",
+                ],
             )
         )
 
@@ -376,13 +537,27 @@ def evaluate_positive_highlights(
                     f"Guest Net Promoter Score is +{ho.guest_satisfaction_nps}, exceeding the {GUEST_NPS_TARGET} benchmark."
                 ),
                 operational_impact="Reflects superior hospitality culture, direct family advocacy, and positive community perception.",
+                driving_factors=(
+                    f"Dining score: {ho.dining_satisfaction_score} pts, room comfort: {ho.cleanliness_room_comfort_score} pts, "
+                    f"open requests: {ho.open_guest_service_requests}, avg resolution: {ho.avg_request_resolution_hours} hrs. "
+                    "The specific guest interactions, room amenities, or staff behaviors driving strong NPS advocacy cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Consider capturing guest feedback themes and recognizing front-line concierge and hospitality staff "
+                    "who consistently drive positive guest sentiment."
+                ),
+                supporting_metrics=[
+                    f"Guest NPS: +{ho.guest_satisfaction_nps} (target: +{GUEST_NPS_TARGET})",
+                    f"Dining score: {ho.dining_satisfaction_score} pts",
+                    f"Room comfort: {ho.cleanliness_room_comfort_score} pts",
+                    f"Resolution time: {ho.avg_request_resolution_hours}h",
+                ],
             )
         )
 
     # ---------------------------------------------------------
     # 8. HOSPITAL TRANSFERS & READMISSIONS DOMAIN
     # ---------------------------------------------------------
-    ht = snapshot.hospital_transfers
     if ht.readmission_rate_30d_pct <= READMISSION_RATE_BENCHMARK_PCT:
         highlights.append(
             PositiveHighlight(
@@ -400,6 +575,18 @@ def evaluate_positive_highlights(
                     f"30-day hospital readmission rate is {ht.readmission_rate_30d_pct}%, outperforming the {READMISSION_RATE_BENCHMARK_PCT}% national benchmark."
                 ),
                 operational_impact="Demonstrates high clinical care quality and strengthens acute hospital preferred provider relationships.",
+                driving_factors=(
+                    f"Acute transfers this week: {ht.acute_transfers_this_week}, unplanned 30d transfers: {ht.unplanned_transfers_30d_count}. "
+                    "The specific clinical pathways, physician rounding frequencies, or triage interventions driving low readmissions cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Consider documenting clinical assessment and early symptom identification routines to reinforce best practices across all nursing shifts."
+                ),
+                supporting_metrics=[
+                    f"30-day readmission: {ht.readmission_rate_30d_pct}% (benchmark: {READMISSION_RATE_BENCHMARK_PCT}%)",
+                    f"Weekly transfers: {ht.acute_transfers_this_week}",
+                    f"30d transfers: {ht.unplanned_transfers_30d_count}",
+                ],
             )
         )
 
@@ -420,6 +607,18 @@ def evaluate_positive_highlights(
                     f"Only {ht.acute_transfers_this_week} acute hospital emergency transfers occurred over the trailing 7 days."
                 ),
                 operational_impact="Indicates stable patient clinical acuity management and successful bedside condition stabilization.",
+                driving_factors=(
+                    f"Unplanned 30d transfers: {ht.unplanned_transfers_30d_count}, 30d readmission rate: {ht.readmission_rate_30d_pct}%. "
+                    "The specific clinical protocols or physician communication practices keeping transfers low cannot be determined from the available data."
+                ),
+                lessons_learned=(
+                    "Consider assessing whether bedside clinical protocols and prompt on-shift clinical escalations can be formalized to sustain low transfer volume."
+                ),
+                supporting_metrics=[
+                    f"Acute transfers: {ht.acute_transfers_this_week} (target: ≤{ACUTE_TRANSFERS_TARGET})",
+                    f"30-day readmission: {ht.readmission_rate_30d_pct}%",
+                    f"30d transfers: {ht.unplanned_transfers_30d_count}",
+                ],
             )
         )
 

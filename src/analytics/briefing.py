@@ -47,15 +47,42 @@ class BriefVitalMetric(BaseModel):
 
 
 class BriefHighlightCard(BaseModel):
-    """Summarized positive highlight card for executive viewing."""
+    """Summarized positive highlight card for executive viewing with 5-section depth."""
 
     title: str = Field(..., description="Short positive headline")
     domain: str = Field(..., description="Operational domain")
+    domain_display_name: str = Field(
+        default="", description="Human-friendly domain display name"
+    )
     plain_language_description: str = Field(
-        ..., description="Plain English explanation"
+        ..., description="Plain English explanation (What's happening)"
     )
     supporting_metric: str = Field(..., description="Data-grounded supporting evidence")
-    significance: str = Field(..., description="Operational importance")
+    significance: str = Field(
+        ..., description="Operational importance (Why it matters)"
+    )
+    whats_happening: str = Field(
+        default="", description="Detailed what's happening narrative"
+    )
+    why_it_matters: str = Field(
+        default="", description="Detailed why it matters narrative"
+    )
+    whats_driving_it: str = Field(
+        default="",
+        description="What is driving performance if supported by data, or explicit note that cause cannot be determined",
+    )
+    what_we_could_learn: str = Field(
+        default="",
+        description="What leadership could learn or how to maintain the positive result",
+    )
+    supporting_metrics: list[str] = Field(
+        default_factory=list,
+        description="List of specific metrics supporting this positive finding",
+    )
+    metric_value: str = Field(default="", description="Formatted current value")
+    metric_sub: str = Field(default="", description="Subtitle metric comparison")
+    category: str = Field(default="TARGET_MET", description="Highlight category")
+    strength: str = Field(default="MEDIUM", description="Materiality of achievement")
 
 
 class BriefWatchItemCard(BaseModel):
@@ -278,19 +305,40 @@ def synthesize_deterministic_facility_brief(
         return f"{val:g}"
 
     highlights: list[BriefHighlightCard] = []
-    for h in positive_results.highlights[:4]:
+    for h in positive_results.highlights[:6]:
         cur_str = _format_metric_with_unit(h.current_value, h.unit)
         bench_str = _format_metric_with_unit(h.benchmark_or_target_value, h.unit)
         target_label = (
             "Prior Week" if h.category == "TRAJECTORY_IMPROVEMENT" else "Target"
         )
+        if h.unit == "%":
+            diff = h.current_value - h.benchmark_or_target_value
+            if h.category == "TRAJECTORY_IMPROVEMENT":
+                metric_sub = f"{cur_str} · +{diff:.1f}% vs prior week"
+            elif diff >= 0:
+                metric_sub = f"{cur_str} · {abs(diff):.1f}% above target"
+            else:
+                metric_sub = f"{cur_str} · {abs(diff):.1f}% below threshold"
+        else:
+            metric_sub = f"{cur_str} vs {target_label} {bench_str}"
+
         highlights.append(
             BriefHighlightCard(
                 title=h.title,
-                domain=h.domain_display_name,
+                domain=h.domain,
+                domain_display_name=h.domain_display_name,
                 plain_language_description=h.evidence_statement,
                 supporting_metric=f"{cur_str} ({target_label}: {bench_str})",
                 significance=h.operational_impact,
+                whats_happening=h.evidence_statement,
+                why_it_matters=h.operational_impact,
+                whats_driving_it=h.driving_factors,
+                what_we_could_learn=h.lessons_learned,
+                supporting_metrics=h.supporting_metrics,
+                metric_value=cur_str,
+                metric_sub=metric_sub,
+                category=h.category,
+                strength=h.strength,
             )
         )
 

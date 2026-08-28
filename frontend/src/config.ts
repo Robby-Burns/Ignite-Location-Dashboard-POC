@@ -73,6 +73,25 @@ export function scenarioById(id: string): ScenarioConfig {
   return SCENARIOS.find((s) => s.id === id) ?? SCENARIOS[0];
 }
 
+export interface FacilityAccent {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export const FACILITY_ACCENTS: Record<string, FacilityAccent> = {
+  "ignite-oak-brook": { id: "ignite-oak-brook", name: "Oak Brook", color: "#2563EB" },
+  "ignite-mokena": { id: "ignite-mokena", name: "Mokena", color: "#7C3AED" },
+  "ignite-kansas-city": { id: "ignite-kansas-city", name: "Kansas City", color: "#0D9488" },
+};
+
+export function facilityAccentById(id: string): FacilityAccent {
+  return (
+    FACILITY_ACCENTS[id] ??
+    { id, name: id.replace(/^ignite-/, "").replace(/-/g, " "), color: "#E8622C" }
+  );
+}
+
 export interface SeverityStyle {
   color: string;
   soft: string;

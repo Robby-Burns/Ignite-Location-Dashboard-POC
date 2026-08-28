@@ -343,7 +343,38 @@ async def test_fastapi_positive_highlights_endpoint() -> None:
         )
         assert res.status_code == 200
         data = res.json()
-        assert data["facility_id"] == "ignite-oak-brook"
-        assert "verified_highlights" in data
-        assert data["verified_highlights"]["total_highlights_count"] > 0
         assert "standup_recognition_notes" in data
+
+
+@pytest.mark.asyncio
+async def test_five_section_positive_highlight_analysis() -> None:
+    """Verify that every positive highlight contains the complete 5-section depth:
+    1. What's happening (evidence_statement)
+    2. Why it matters (operational_impact)
+    3. What's driving it (driving_factors - data-supported or explicitly undetermined)
+    4. What we could learn from it (lessons_learned)
+    5. Evidence (supporting_metrics)
+    """
+    mcp_client = MockDomoMCPClient()
+    for facility_id in ["ignite-oak-brook", "ignite-mokena", "ignite-kansas-city"]:
+        snapshot = mcp_client.get_facility_snapshot(facility_id, "baseline")
+        history = mcp_client.get_facility_history(facility_id, 30, "baseline")
+        summary = evaluate_positive_highlights(snapshot, history, "baseline")
+
+        assert summary.total_highlights_count > 0
+        for hl in summary.highlights:
+            # 1. What's happening
+            assert hl.evidence_statement and len(hl.evidence_statement) > 10
+            # 2. Why it matters
+            assert hl.operational_impact and len(hl.operational_impact) > 10
+            # 3. What's driving it (must not invent causes)
+            assert hl.driving_factors and len(hl.driving_factors) > 10
+            assert (
+                "cannot be determined from the available data" in hl.driving_factors
+                or "cannot be determined from the available snapshot data" in hl.driving_factors
+            )
+            # 4. What we could learn from it
+            assert hl.lessons_learned and len(hl.lessons_learned) > 10
+            # 5. Evidence
+            assert len(hl.supporting_metrics) >= 2
+

@@ -21,9 +21,19 @@ export interface BriefVitalMetric {
 export interface BriefHighlightCard {
   title: string;
   domain: string;
+  domain_display_name?: string;
   plain_language_description: string;
   supporting_metric: string;
   significance: string;
+  whats_happening?: string;
+  why_it_matters?: string;
+  whats_driving_it?: string;
+  what_we_could_learn?: string;
+  supporting_metrics?: string[];
+  metric_value?: string;
+  metric_sub?: string;
+  category?: string;
+  strength?: "HIGH" | "MEDIUM" | "LOW";
 }
 
 export interface BriefWatchItemCard {
