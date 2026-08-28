@@ -170,6 +170,42 @@ export interface RecommendationReport {
   generated_at: string;
 }
 
+export interface AttentionAreaItem {
+  item_id: string;
+  domain: string;
+  domain_display_name: string;
+  title: string;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  urgency: "IMMEDIATE" | "SAME_DAY" | "MONITOR";
+  metric_name: string;
+  current_value: number;
+  threshold_or_target: number;
+  variance_or_deficit: number;
+  unit: string;
+  evidence_statement: string;
+  operational_risk_summary: string;
+  related_domains: string[];
+  is_cross_domain_compound: boolean;
+}
+
+export interface AttentionAnalysisReport {
+  facility_id: string;
+  facility_name: string;
+  snapshot_date: string;
+  scenario: string;
+  analysis_state:
+    | "ANALYSIS_COMPLETE"
+    | "AI_ANALYSIS_UNAVAILABLE"
+    | "INSUFFICIENT_DATA";
+  executive_attention_summary: string;
+  critical_risk_factors: string[];
+  prioritized_operational_concerns: AttentionAreaItem[];
+  cross_domain_impact_narrative: string;
+  immediate_focus_areas: string[];
+  data_limitations_and_uncertainty: string;
+  generated_at: string;
+}
+
 // Story 4.3: Dynamic Follow-Up Questions & Chat
 
 export interface FollowUpQuestion {

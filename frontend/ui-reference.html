@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ignite Intelligence — Operational Decision Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A2332;
+    --ink-soft:#4B5566;
+    --muted:#847C6E;
+    --paper:#FAF8F4;
+    --surface:#FFFFFF;
+    --line:#E7E1D6;
+    --line-soft:#F0ECE3;
+    --flame:#E8622C;
+    --flame-soft:#FDEEE6;
+    --good:#2F7D5C;
+    --good-bg:#E9F3EE;
+    --good-line:#BFDBCC;
+    --watch:#AD7B1F;
+    --watch-bg:#FBF2DF;
+    --watch-line:#EBD69E;
+    --critical:#C4432B;
+    --critical-bg:#FBEAE5;
+    --critical-line:#EFC0B2;
+    --radius:14px;
+    --radius-sm:10px;
+    --shadow:0 1px 2px rgba(26,35,50,0.04), 0 4px 16px rgba(26,35,50,0.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Manrope',sans-serif;}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+  button{font-family:inherit;cursor:pointer;}
+  .app{max-width:1440px;margin:0 auto;padding:20px 28px 60px;}
+
+  /* ---------- HEADER ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:16px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(155deg,#F0703C,#D6501F);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .brand-mark svg{width:20px;height:20px;}
+  .brand-text .name{font-family:'Manrope';font-weight:800;font-size:16.5px;letter-spacing:0.2px;}
+  .brand-text .name span{color:var(--flame);}
+  .brand-text .sub{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .selector{
+    display:flex;align-items:center;gap:8px;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    padding:8px 12px;font-size:13px;font-weight:500;color:var(--ink-soft);
+  }
+  .selector .dot{width:6px;height:6px;border-radius:50%;background:var(--flame);flex-shrink:0;}
+  .updated{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .refresh-btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);}
+  .refresh-btn:hover{background:var(--line-soft);}
+
+  /* ---------- PRIORITY BANNER ---------- */
+  .banner{
+    background:var(--critical-bg);
+    border:1px solid var(--critical-line);
+    border-radius:var(--radius);
+    padding:18px 22px;
+    display:flex;align-items:center;justify-content:space-between;gap:20px;
+    margin-bottom:18px;
+  }
+  .banner-left{display:flex;gap:14px;align-items:flex-start;}
+  .banner-icon{width:34px;height:34px;border-radius:9px;background:var(--critical);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+  .banner-icon svg{width:17px;height:17px;color:#fff;}
+  .banner-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--critical);text-transform:uppercase;margin-bottom:3px;}
+  .banner-title{font-family:'Manrope';font-weight:700;font-size:17px;margin-bottom:4px;}
+  .banner-detail{font-size:13px;color:var(--ink-soft);max-width:640px;}
+  .banner-detail b{color:var(--ink);font-weight:600;}
+  .banner-cta{
+    background:var(--critical);color:#fff;border:none;border-radius:9px;
+    padding:10px 16px;font-size:13px;font-weight:600;white-space:nowrap;
+    display:flex;align-items:center;gap:6px;flex-shrink:0;
+  }
+  .banner-cta:hover{background:#AB3A25;}
+
+  /* ---------- VITALS STRIP (signature element) ---------- */
+  .vitals-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .vitals-label h2{font-size:12.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin:0;}
+  .vitals-label a{font-size:12.5px;color:var(--flame);text-decoration:none;font-weight:600;}
+  .vitals{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:26px;}
+  .vital{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .vital::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;}
+  .vital.good::before{background:var(--good);}
+  .vital.watch::before{background:var(--watch);}
+  .vital.critical::before{background:var(--critical);}
+  .vital-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .vital-name{font-size:11.5px;color:var(--muted);font-weight:600;}
+  .vital-pulse{width:46px;height:16px;}
+  .vital-value-row{display:flex;align-items:baseline;gap:5px;margin-bottom:6px;}
+  .vital-value{font-family:'Manrope';font-weight:800;font-size:23px;}
+  .vital-unit{font-size:12px;color:var(--muted);font-weight:600;}
+  .vital-status{
+    display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+    padding:3px 8px;border-radius:20px;
+  }
+  .vital.good .vital-status{background:var(--good-bg);color:var(--good);}
+  .vital.watch .vital-status{background:var(--watch-bg);color:var(--watch);}
+  .vital.critical .vital-status{background:var(--critical-bg);color:var(--critical);}
+  .vital-status .arrow{font-size:10px;}
+  .vital-target{font-size:11px;color:var(--muted);margin-top:7px;}
+
+  /* ---------- LAYOUT ---------- */
+  .layout{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;}
+  .layout.chat-collapsed{grid-template-columns:1fr 56px;}
+  .main-col{min-width:0;}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:16px;width:fit-content;}
+  .tab{border:none;background:transparent;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:7px;}
+  .tab .count{font-size:10.5px;background:var(--line-soft);color:var(--ink-soft);border-radius:20px;padding:1px 6px;}
+  .tab.active{background:var(--ink);color:#fff;}
+  .tab.active .count{background:rgba(255,255,255,0.18);color:#fff;}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .item{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .item-head{display:flex;align-items:center;gap:14px;padding:15px 18px;}
+  .item-badge{
+    width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;font-size:14px;
+  }
+  .item.critical .item-badge{background:var(--critical-bg);color:var(--critical);}
+  .item.watch .item-badge{background:var(--watch-bg);color:var(--watch);}
+  .item.good .item-badge{background:var(--good-bg);color:var(--good);}
+  .item-title-wrap{flex:1;min-width:0;}
+  .item-title{font-weight:700;font-size:14.5px;margin-bottom:2px;}
+  .item-sub{font-size:12.5px;color:var(--muted);}
+  .item-metric{font-family:'Manrope';font-weight:800;font-size:16px;white-space:nowrap;}
+  .item.critical .item-metric{color:var(--critical);}
+  .item.watch .item-metric{color:var(--watch);}
+  .item.good .item-metric{color:var(--good);}
+  .chev{width:20px;height:20px;flex-shrink:0;color:var(--muted);transition:transform .18s ease;}
+  .item.open .chev{transform:rotate(90deg);}
+  .item-head{cursor:pointer;}
+  .item-body{max-height:0;overflow:hidden;transition:max-height .22s ease;}
+  .item.open .item-body{max-height:340px;}
+  .item-body-inner{padding:0 18px 18px 18px;border-top:1px solid var(--line-soft);margin-top:2px;padding-top:14px;}
+  .rec-label{font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--flame);margin-bottom:6px;}
+  .rec-text{font-size:13px;color:var(--ink-soft);margin-bottom:12px;}
+  .rec-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .rec-actions button{
+    font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:8px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);
+  }
+  .rec-actions button.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .trend-note{font-size:12px;color:var(--good);font-weight:600;margin-top:8px;display:flex;align-items:center;gap:5px;}
+
+  .strength-item{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);}
+  .strength-badge{width:30px;height:30px;border-radius:9px;background:var(--good-bg);color:var(--good);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .strength-title{font-weight:700;font-size:14px;margin-bottom:2px;}
+  .strength-sub{font-size:12.5px;color:var(--muted);}
+  .strength-metric{margin-left:auto;font-family:'Manrope';font-weight:800;font-size:15.5px;color:var(--good);}
+
+  .footer-note{
+    margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  }
+  .footer-note-left{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-soft);}
+  .footer-note-left svg{width:16px;height:16px;color:var(--flame);flex-shrink:0;}
+  .footer-checks{display:flex;gap:14px;font-size:11.5px;color:var(--muted);}
+  .footer-checks span{display:flex;align-items:center;gap:5px;}
+  .footer-checks .dot-ok{width:6px;height:6px;border-radius:50%;background:var(--good);}
+
+  /* ---------- CHAT PANEL ---------- */
+  .chat{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);position:sticky;top:20px;
+    display:flex;flex-direction:column;max-height:calc(100vh - 40px);
+  }
+  .chat-collapsed .chat{padding:0;}
+  .chat-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line-soft);}
+  .chat-head-title{display:flex;align-items:center;gap:9px;}
+  .chat-head-title svg{width:17px;height:17px;color:var(--flame);}
+  .chat-head-title h3{font-size:14px;margin:0;}
+  .chat-collapse-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;}
+  .chat-collapse-btn:hover{background:var(--line-soft);}
+  .chat-body{padding:16px 18px;overflow-y:auto;}
+  .chat-desc{font-size:12.5px;color:var(--muted);margin-bottom:14px;}
+  .context-card{background:var(--flame-soft);border:1px solid #F3CBB4;border-radius:11px;padding:12px 14px;margin-bottom:16px;}
+  .context-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--flame);margin-bottom:5px;}
+  .context-title{font-weight:700;font-size:13.5px;margin-bottom:4px;}
+  .context-sub{font-size:12px;color:var(--ink-soft);}
+  .suggested-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:8px;}
+  .suggested-q{
+    display:block;width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);
+    border-radius:9px;padding:9px 11px;font-size:12.5px;color:var(--ink-soft);margin-bottom:7px;font-weight:500;
+  }
+  .suggested-q:hover{border-color:var(--flame);color:var(--ink);background:#fff;}
+  .chat-input-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line-soft);}
+  .chat-input-row input{
+    flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;
+    background:var(--paper);color:var(--ink);
+  }
+  .chat-input-row input:focus{outline:2px solid var(--flame);outline-offset:1px;}
+  .chat-send{width:34px;height:34px;border-radius:9px;background:var(--flame);border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .chat-send svg{width:15px;height:15px;color:#fff;}
+  .chat-trust{display:flex;gap:8px;padding:12px 18px 16px;font-size:11px;color:var(--muted);align-items:flex-start;}
+  .chat-trust svg{width:14px;height:14px;color:var(--good);flex-shrink:0;margin-top:1px;}
+
+  .chat-rail{display:none;}
+  .chat-collapsed .chat-body,.chat-collapsed .chat-input-row,.chat-collapsed .chat-trust,.chat-collapsed .chat-head-title{display:none;}
+  .chat-collapsed .chat-head{border-bottom:none;justify-content:center;padding:16px 0;}
+  .chat-collapsed .chat-rail{display:flex;flex-direction:column;align-items:center;gap:16px;padding:6px 0 16px;}
+  .chat-collapsed .chat-rail svg{width:18px;height:18px;color:var(--muted);}
+
+  @media (max-width:1100px){
+    .vitals{grid-template-columns:repeat(3,1fr);}
+    .layout{grid-template-columns:1fr;}
+    .chat{position:relative;top:0;}
+  }
+  @media (max-width:640px){
+    .vitals{grid-template-columns:repeat(2,1fr);}
+    .app{padding:14px 14px 40px;}
+  }
+
+  :focus-visible{outline:2px solid var(--flame);outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2c1 3-2 4-2 7a4 4 0 108 0c0-1-1-2-1-2 2 1 3 4 3 6a8 8 0 11-16 0c0-4 3-6 4-9 1-2 2-2 4-2z" fill="white"/></svg>
+      </div>
+      <div class="brand-text">
+        <div class="name">IGNITE <span>INTELLIGENCE</span></div>
+        <div class="sub">Operational Decision Support</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="selector"><span class="dot"></span>Ignite Medical Resort Kansas City</div>
+      <div class="selector">Demo Scenario: Staffing Stress</div>
+      <div class="updated">Updated 8:27 AM</div>
+      <button class="refresh-btn" title="Refresh" aria-label="Refresh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PRIORITY BANNER (consolidated — single mention of the top issue) -->
+  <div class="banner">
+    <div class="banner-left">
+      <div class="banner-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      </div>
+      <div>
+        <div class="banner-eyebrow">Needs attention · Facility state</div>
+        <div class="banner-title">Nursing coverage is below target today</div>
+        <div class="banner-detail">Direct care is <b>3.62 HPPD</b> vs a <b>4.10</b> target, with <b>5 open shifts</b> and elevated agency use covering the gap.</div>
+      </div>
+    </div>
+    <button class="banner-cta" onclick="openItem('nursing')">
+      View recommendation
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+
+  <!-- VITALS STRIP — signature element, monitor-style readout -->
+  <div class="vitals-label">
+    <h2>Facility vitals</h2>
+    <a href="#">View all metrics →</a>
+  </div>
+  <div class="vitals" id="vitalsStrip"></div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="layout" id="layoutRoot">
+    <div class="main-col">
+      <div class="tabs">
+        <button class="tab active" data-tab="attention" onclick="switchTab('attention')">
+          Needs attention <span class="count">2</span>
+        </button>
+        <button class="tab" data-tab="strengths" onclick="switchTab('strengths')">
+          Going well <span class="count">3</span>
+        </button>
+      </div>
+
+      <!-- ATTENTION PANEL: watch-item + its recommendation merged into one expandable card -->
+      <div class="panel active" id="panel-attention">
+
+        <div class="item critical" id="nursing">
+          <div class="item-head" onclick="toggleItem('nursing')">
+            <div class="item-badge">①</div>
+            <div class="item-title-wrap">
+              <div class="item-title">Nursing coverage</div>
+              <div class="item-sub">5 open shifts · below target</div>
+            </div>
+            <div class="item-metric num">3.62 HPPD</div>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="item-body">
+            <div class="item-body-inner">
+              <div class="rec-label">Recommended action</div>
+              <div class="rec-text">Recover direct-care hours by reallocating float staff to open shifts and prioritizing agency fill for the two units furthest below target. Closing the gap to 4.10 HPPD would also reduce reliance on agency coverage.</div>
+              <div class="rec-actions">
+                <button class="primary">Open staffing plan</button>
+                <button>Assign to charge nurse</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="item watch" id="agency">
+          <div class="item-head" onclick="toggleItem('agency')">
+            <div class="item-badge">②</div>
+            <div class="item-title-wrap">
+              <div class="item-title">Agency utilization</div>
+              <div class="item-sub">Above 10% target</div>
+            </div>
+            <div class="item-metric num">18.5%</div>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="item-body">
+            <div class="item-body-inner">
+              <div class="rec-label">Recommended action</div>
+              <div class="rec-text">Optimize internal scheduling to reduce dependence on agency staff. Review upcoming PTO and shift-swap requests that may be driving short-notice agency bookings.</div>
+              <div class="trend-note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Improving — down from 19.8% yesterday
+              </div>
+              <div class="rec-actions" style="margin-top:12px;">
+                <button class="primary">Review schedule</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="item watch" id="los">
+          <div class="item-head" onclick="toggleItem('los')">
+            <div class="item-badge">③</div>
+            <div class="item-title-wrap">
+              <div class="item-title">Length of stay outliers</div>
+              <div class="item-sub">10 patients above expected LOS</div>
+            </div>
+            <div class="item-metric num">15.3 days</div>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="item-body">
+            <div class="item-body-inner">
+              <div class="rec-label">Recommended action</div>
+              <div class="rec-text">Review the 10 patients exceeding expected length of stay with the care team to identify discharge blockers and confirm care plans are on track.</div>
+              <div class="rec-actions">
+                <button class="primary">View patient list</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- STRENGTHS PANEL -->
+      <div class="panel" id="panel-strengths">
+        <div class="strength-item">
+          <div class="strength-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div>
+            <div class="strength-title">Therapy completion</div>
+            <div class="strength-sub">Above 90.0% target</div>
+          </div>
+          <div class="strength-metric num">93.5%</div>
+        </div>
+        <div class="strength-item">
+          <div class="strength-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div>
+            <div class="strength-title">Guest satisfaction</div>
+            <div class="strength-sub">Above 85.0% target</div>
+          </div>
+          <div class="strength-metric num">89.0%</div>
+        </div>
+        <div class="strength-item">
+          <div class="strength-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div>
+            <div class="strength-title">Occupancy rate</div>
+            <div class="strength-sub">Above 85.0% target</div>
+          </div>
+          <div class="strength-metric num">92.3%</div>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <div class="footer-note-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span><b>Decision support</b> — analysis is based on verified facility data and is intended to support human leadership decisions, not replace clinical or administrative judgment.</span>
+        </div>
+        <div class="footer-checks">
+          <span><span class="dot-ok"></span>Data connected</span>
+          <span><span class="dot-ok"></span>Metrics verified</span>
+          <span><span class="dot-ok"></span>Analysis complete</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT PANEL -->
+    <div class="chat" id="chatPanel">
+      <div class="chat-head">
+        <div class="chat-head-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+          <h3>Explore the analysis</h3>
+        </div>
+        <button class="chat-collapse-btn" onclick="toggleChat()" aria-label="Collapse panel">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path id="chatChevron" d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+      <div class="chat-rail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      </div>
+      <div class="chat-body">
+        <div class="chat-desc">Ask about what the agent found, why it matters, and what's driving it.</div>
+        <div class="context-card">
+          <div class="context-label">Currently exploring</div>
+          <div class="context-title">Nursing coverage</div>
+          <div class="context-sub">3.62 HPPD vs 4.10 target, 5 open shifts.</div>
+        </div>
+        <div class="suggested-label">Suggested questions</div>
+        <button class="suggested-q" onclick="fillChat(this)">Why is nursing coverage below target?</button>
+        <button class="suggested-q" onclick="fillChat(this)">What shifts are most affected?</button>
+        <button class="suggested-q" onclick="fillChat(this)">What changed since yesterday?</button>
+        <button class="suggested-q" onclick="fillChat(this)">How does this compare to last week?</button>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Type your question…">
+        <button class="chat-send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+      </div>
+      <div class="chat-trust">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Answers are grounded in facility data. The agent does not make clinical or administrative decisions.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---- Vitals data: consistent good/watch/critical status drives all color, independent of arrow direction ----
+  const vitals = [
+    {name:"Occupancy Rate", value:"92.3", unit:"%", target:"Target ≥ 85.0%", status:"good", trend:"up", spark:[60,63,58,66,70,74,80,86,90,92]},
+    {name:"Direct Care (HPPD)", value:"3.62", unit:"", target:"Target ≥ 4.10", status:"critical", trend:"down", spark:[85,82,78,74,70,66,60,55,50,46]},
+    {name:"Agency Staffing", value:"18.5", unit:"%", target:"Target < 10.0%", status:"watch", trend:"down", spark:[92,90,88,85,80,76,70,65,60,55]},
+    {name:"Therapy Completion", value:"93.5", unit:"%", target:"Target ≥ 90.0%", status:"good", trend:"up", spark:[55,58,62,65,70,74,78,84,88,93]},
+    {name:"Guest Satisfaction", value:"89.0", unit:"%", target:"Target ≥ 85.0%", status:"good", trend:"up", spark:[62,64,66,70,73,76,80,83,86,89]},
+  ];
+
+  const statusLabel = {good:"On target", watch:"Above target", critical:"Below target"};
+  const arrowGlyph = {up:"↑", down:"↓"};
+
+  function sparkPath(values){
+    const w=46,h=16,max=Math.max(...values),min=Math.min(...values);
+    const norm = v => h - ((v-min)/(max-min || 1)) * (h-3) - 1.5;
+    return values.map((v,i)=>`${i===0?'M':'L'} ${(i/(values.length-1))*w} ${norm(v).toFixed(1)}`).join(' ');
+  }
+
+  const stripEl = document.getElementById('vitalsStrip');
+  stripEl.innerHTML = vitals.map(v => `
+    <div class="vital ${v.status}">
+      <div class="vital-head">
+        <span class="vital-name">${v.name}</span>
+        <svg class="vital-pulse" viewBox="0 0 46 16" fill="none">
+          <path d="${sparkPath(v.spark)}" stroke="var(--${v.status})" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="vital-value-row">
+        <span class="vital-value num">${v.value}</span><span class="vital-unit">${v.unit}</span>
+      </div>
+      <div class="vital-status"><span class="arrow">${arrowGlyph[v.trend]}</span>${statusLabel[v.status]}</div>
+      <div class="vital-target">${v.target}</div>
+    </div>
+  `).join('');
+
+  // ---- Tabs ----
+  function switchTab(name){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+name).classList.add('active');
+  }
+
+  // ---- Expandable items ----
+  function toggleItem(id){
+    document.getElementById(id).classList.toggle('open');
+  }
+  function openItem(id){
+    switchTab('attention');
+    const el = document.getElementById(id);
+    el.classList.add('open');
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  // ---- Chat panel collapse ----
+  function toggleChat(){
+    document.getElementById('layoutRoot').classList.toggle('chat-collapsed');
+    const chevron = document.getElementById('chatChevron');
+    const collapsed = document.getElementById('layoutRoot').classList.contains('chat-collapsed');
+    chevron.setAttribute('d', collapsed ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6');
+  }
+
+  function fillChat(btn){
+    document.getElementById('chatInput').value = btn.textContent;
+    document.getElementById('chatInput').focus();
+  }
+
+  // open the top-priority item by default so the banner CTA has somewhere obvious to land
+</script>
+</body>
+</html>

@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
 }
