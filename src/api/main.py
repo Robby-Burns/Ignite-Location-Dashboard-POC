@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="Ignite Facility Operational Decision Agent API",
+    title="Ignite Intelligence | Local Dashboard POC",
     description="Proof of concept operational decision support agent for Ignite Medical Resorts.",
     version="0.1.0",
     lifespan=lifespan,

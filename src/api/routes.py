@@ -261,6 +261,66 @@ async def get_facility_brief_endpoint(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+# --- Story 4.3: Dynamic Follow-Up Questions & Chat ---
+
+from src.agent.chat_agent import ChatMessage, ChatResponse, FacilityChatAgent
+from src.agent.question_agent import FacilityQuestionAgent, FollowUpQuestionReport
+
+question_agent = FacilityQuestionAgent(mcp_client=mcp_client)
+chat_agent = FacilityChatAgent(mcp_client=mcp_client)
+
+
+@router.get("/agent/follow-up-questions", response_model=FollowUpQuestionReport)
+async def get_follow_up_questions_endpoint(
+    facility_id: str = Query(
+        default="ignite-oak-brook", description="Facility identifier"
+    ),
+    scenario: str = Query(default="baseline", description="Operational scenario name"),
+    days_history: int = Query(
+        default=30, ge=1, le=365, description="Historical observation days"
+    ),
+) -> FollowUpQuestionReport:
+    """Generate dynamic follow-up questions from the current facility analysis (Story 4.3)."""
+    try:
+        return await question_agent.generate_questions(
+            facility_id=facility_id,
+            scenario=scenario,
+            days_history=days_history,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+class ChatRequest(BaseModel):
+    """Request body for the facility chat endpoint."""
+
+    facility_id: str = Field(
+        default="ignite-oak-brook", description="Facility identifier"
+    )
+    scenario: str = Field(default="baseline", description="Operational scenario name")
+    question: str = Field(..., description="User's question about facility operations")
+    conversation_history: list[ChatMessage] = Field(
+        default_factory=list,
+        description="Previous messages in the conversation for context",
+    )
+
+
+@router.post("/agent/chat", response_model=ChatResponse)
+async def chat_with_facility_endpoint(
+    request: ChatRequest,
+) -> ChatResponse:
+    """Answer a user question about facility operations using grounded data (Story 4.3)."""
+    try:
+        return await chat_agent.answer_question(
+            facility_id=request.facility_id,
+            scenario=request.scenario,
+            question=request.question,
+            conversation_history=request.conversation_history,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
 # --- Story 3.4: Technical / How It Works ---
 
 
@@ -396,6 +456,8 @@ async def get_technical_architecture_endpoint() -> TechnicalArchitectureReport:
                 "FacilityAttentionAgent — Attention area prioritization and correlation",
                 "FacilityRecommendationAgent — Data-grounded recommendation synthesis",
                 "FacilityBriefAgent — Executive briefing generation",
+                "FacilityQuestionAgent — Dynamic follow-up question generation from analysis",
+                "FacilityChatAgent — Data-grounded conversational Q&A with reconciliation",
             ],
             is_simulated=False,
         ),
@@ -458,6 +520,13 @@ async def get_technical_architecture_endpoint() -> TechnicalArchitectureReport:
                 source_component="NumericalGroundingReconciler",
                 output_component="API Response / Frontend",
             ),
+            DataFlowStep(
+                step=7,
+                name="Dynamic Follow-Up & Chat",
+                description="The agent generates context-specific follow-up questions from the current analysis. Users can ask questions and receive data-grounded answers verified against numerical ground truth.",
+                source_component="Analytics Engine + LLMClient",
+                output_component="FacilityQuestionAgent / FacilityChatAgent",
+            ),
         ],
         separation_of_responsibilities={
             "Data Source (Mock Domo MCP)": "Provides raw synthetic facility data. Does NOT perform calculations or generate interpretations.",
@@ -465,6 +534,7 @@ async def get_technical_architecture_endpoint() -> TechnicalArchitectureReport:
             "AI Language Model": "Generates plain-language explanations from verified facts. Does NOT perform calculations or invent numbers.",
             "Evidence Grounding Reconciler": "Validates AI output against verified numbers. Does NOT generate new content.",
             "Frontend Presentation": "Renders structured data for human review. Does NOT modify or re-derive calculations.",
+            "Dynamic Follow-Up & Chat": "Generates context-specific questions and data-grounded answers. Questions are derived from current analysis, not hard-coded. All responses are reconciled against verified numbers.",
         },
         limitations=[
             "This is a proof-of-concept using synthetic data. It is NOT a production clinical decision-support system.",
@@ -475,6 +545,8 @@ async def get_technical_architecture_endpoint() -> TechnicalArchitectureReport:
             "The POC demonstrates a single flagship facility (Ignite Medical Resort Oak Brook) across 6 predefined scenarios.",
             "Recommendations are decision-support suggestions for human review — they are NOT autonomous actions.",
             "The system does not have access to real clinical data, EHR systems, or production Domo credentials.",
+            "The Ask the Facility chat generates dynamic follow-up questions from the current analysis — questions are NOT hard-coded.",
+            "Chat responses are grounded in verified facility data and reconciled against numerical ground truth.",
         ],
         future_integration=(
             "To connect to a real Domo data source, the MockDomoMCPServer would be replaced with a production Domo MCP "

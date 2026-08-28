@@ -170,6 +170,48 @@ export interface RecommendationReport {
   generated_at: string;
 }
 
+// Story 4.3: Dynamic Follow-Up Questions & Chat
+
+export interface FollowUpQuestion {
+  question_id: string;
+  question_text: string;
+  related_domain: string;
+  context_summary: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export interface FollowUpQuestionReport {
+  facility_id: string;
+  facility_name: string;
+  scenario: string;
+  analysis_state: "ANALYSIS_COMPLETE" | "AI_ANALYSIS_UNAVAILABLE";
+  questions: FollowUpQuestion[];
+  generated_at: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatRequest {
+  facility_id: string;
+  scenario: string;
+  question: string;
+  conversation_history: ChatMessage[];
+}
+
+export interface ChatResponse {
+  facility_id: string;
+  facility_name: string;
+  answer: string;
+  supporting_data: string[];
+  data_sources_used: string[];
+  analysis_state: "ANALYSIS_COMPLETE" | "AI_ANALYSIS_UNAVAILABLE" | "INSUFFICIENT_DATA";
+  disclaimer: string;
+  generated_at: string;
+}
+
 export interface ArchitectureLayer {
   name: string;
   description: string;

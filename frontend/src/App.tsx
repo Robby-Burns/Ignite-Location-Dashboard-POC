@@ -8,12 +8,14 @@ import {
   FileText, 
   HelpCircle, 
   CheckSquare, 
-  SlidersHorizontal 
+  SlidersHorizontal,
+  MessageCircle
 } from "lucide-react";
 import { FacilityBriefView } from "./components/FacilityBriefView";
 import { WhatItMeansView } from "./components/WhatItMeansView";
 import { RecommendationsView } from "./components/RecommendationsView";
 import { TechnicalView } from "./components/TechnicalView";
+import { ChatView } from "./components/ChatView";
 import { 
   FacilityBriefReport, 
   FacilityTrendExplanationReport,
@@ -45,7 +47,7 @@ export const App: React.FC = () => {
   const [facilities, setFacilities] = useState<FacilityOption[]>(DEFAULT_FACILITIES);
   const [selectedFacility, setSelectedFacility] = useState<string>("ignite-oak-brook");
   const [selectedScenario, setSelectedScenario] = useState<string>("baseline");
-  const [activeTab, setActiveTab] = useState<"brief" | "meaning" | "recommendations" | "technical">("brief");
+  const [activeTab, setActiveTab] = useState<"brief" | "meaning" | "recommendations" | "chat" | "technical">("brief");
   
   // Briefing Data State (Story 3.1)
   const [briefData, setBriefData] = useState<FacilityBriefReport | null>(null);
@@ -174,10 +176,10 @@ export const App: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  IGNITE <span className="text-orange-600 font-bold">OPERATIONS</span>
+                  IGNITE <span className="text-orange-600 font-bold">INTELLIGENCE</span>
                 </h1>
                 <p className="text-xs text-slate-500 font-semibold tracking-wide">
-                  Facility Leadership Decision Support Agent
+                  Local Dashboard POC
                 </p>
               </div>
             </div>
@@ -271,6 +273,21 @@ export const App: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setActiveTab("chat")}
+              className={`flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${
+                activeTab === "chat"
+                  ? "bg-teal-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Ask the Facility</span>
+              <span className="text-[10px] uppercase font-extrabold bg-white/20 px-1.5 py-0.2 rounded">
+                4.3
+              </span>
+            </button>
+
+            <button
               onClick={() => setActiveTab("technical")}
               className={`flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${
                 activeTab === "technical"
@@ -302,6 +319,10 @@ export const App: React.FC = () => {
           <RecommendationsView data={recommendationsData} loading={recommendationsLoading} error={recommendationsError} />
         )}
 
+        {activeTab === "chat" && (
+          <ChatView facilityId={selectedFacility} scenario={selectedScenario} />
+        )}
+
         {activeTab === "technical" && (
           <TechnicalView data={technicalData} loading={technicalLoading} error={technicalError} />
         )}
@@ -309,7 +330,7 @@ export const App: React.FC = () => {
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
-        Ignite Medical Resorts POC • Human-Centered Decision Intelligence • Phase 3 (Human-Facing Experience)
+        Ignite Medical Resorts • Ignite Intelligence Local Dashboard POC
       </footer>
     </div>
   );

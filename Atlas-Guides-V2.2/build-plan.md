@@ -84,9 +84,10 @@
 
 | Story ID | Title | Risk | Dependencies | Status |
 |---|---|---|---|---|
-| **4.1** | Recommendation Evaluation | MEDIUM | 2.5 | PENDING |
-| **4.2** | Failure and Boundary Testing | MEDIUM | 2.1, 2.5 | PENDING |
-| **GATE-4** | Phase 4 Gate | MEDIUM | 4.1, 4.2 | PENDING |
+| **4.1** | Recommendation Evaluation | MEDIUM | 2.5 | **STORY_VERIFIED** |
+| **4.2** | Failure and Boundary Testing | MEDIUM | 2.1, 2.5 | **STORY_VERIFIED** |
+| **4.3** | Dynamic Follow-Up Questions & Chat | MEDIUM | 2.4, 2.5 | **STORY_VERIFIED** |
+| **GATE-4** | Phase 4 Gate | MEDIUM | 4.1, 4.2, 4.3 | **PHASE_GATE_PASSED** |
 
 ---
 
