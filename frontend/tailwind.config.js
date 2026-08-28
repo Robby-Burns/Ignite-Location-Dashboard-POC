@@ -20,6 +20,7 @@ export default {
           soft: '#4B5566',
         },
         muted: '#847C6E',
+        surface: '#FFFFFF',
         paper: '#FAF8F4',
         line: {
           DEFAULT: '#E7E1D6',

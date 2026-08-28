@@ -38,4 +38,4 @@ ENV USE_LOCAL_SQLITE=1
 EXPOSE 8080
 
 # Run the application
-CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
