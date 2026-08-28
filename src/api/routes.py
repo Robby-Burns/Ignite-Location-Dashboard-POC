@@ -87,6 +87,35 @@ async def get_facility_history(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+from src.agent.unified_agent import (
+    FacilityUnifiedAnalysisAgent,
+    UnifiedFacilityAnalysisResponse,
+)
+
+unified_agent = FacilityUnifiedAnalysisAgent(mcp_client=mcp_client)
+
+
+@router.get("/agent/facility-analysis", response_model=UnifiedFacilityAnalysisResponse)
+async def analyze_facility_unified_endpoint(
+    facility_id: str = Query(
+        default="ignite-oak-brook", description="Facility identifier"
+    ),
+    scenario: str = Query(default="baseline", description="Operational scenario name"),
+    days_history: int = Query(
+        default=30, ge=1, le=365, description="Historical observation days"
+    ),
+) -> UnifiedFacilityAnalysisResponse:
+    """Perform complete facility operational analysis with single unified structured LLM reasoning."""
+    try:
+        return await unified_agent.analyze_facility(
+            facility_id=facility_id,
+            scenario=scenario,
+            days_history=days_history,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
 # Singleton agent instances
 state_agent = FacilityStateAgent(mcp_client=mcp_client)
 from src.agent.trend_agent import (

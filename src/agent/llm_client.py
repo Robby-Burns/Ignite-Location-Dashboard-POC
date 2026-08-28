@@ -131,10 +131,10 @@ class LLMClient:
             )
             or os.getenv("LLM_MODEL")
             or (
-                "google/gemini-2.0-flash-001"
+                "google/gemini-2.5-flash-lite"
                 if self.effective_provider == "openrouter"
                 else (
-                    "gemini-2.0-flash"
+                    "gemini-2.5-flash-lite"
                     if self.effective_provider == "gemini"
                     else "gpt-4o-mini"
                 )
@@ -144,16 +144,19 @@ class LLMClient:
         # Normalize OpenRouter model aliases
         if self.effective_provider == "openrouter":
             if raw_model in (
+                "google/gemini-2.5-flash-lite",
+                "gemini-2.5-flash-lite",
+                "flash-lite",
+                "google/gemini-2.0-flash-lite-001",
+                "google/gemini-2.0-flash-lite",
+            ):
+                raw_model = "google/gemini-2.5-flash-lite"
+            elif raw_model in (
                 "google/gemini-2.0-flash",
                 "gemini-2.0-flash",
+                "google/gemini-2.0-flash-001",
             ):
                 raw_model = "google/gemini-2.0-flash-001"
-            elif raw_model in (
-                "google/gemini-2.0-flash-lite",
-                "gemini-2.0-flash-lite",
-                "flash-lite",
-            ):
-                raw_model = "google/gemini-2.0-flash-lite-001"
             elif raw_model == "gpt-4o-mini":
                 raw_model = "openai/gpt-4o-mini"
             elif raw_model == "claude-3.5-haiku":

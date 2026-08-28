@@ -7,12 +7,11 @@ import { ExploreAnalysis } from "./components/ExploreAnalysis";
 import { TechnicalView } from "./components/TechnicalView";
 import {
   FacilityBriefReport,
-  AttentionAnalysisReport,
-  RecommendationReport,
   FollowUpQuestionReport,
   TechnicalArchitectureReport,
+  UnifiedFacilityAnalysisResponse,
 } from "./types";
-import { buildFindings, facilityAccentById } from "./config";
+import { Finding, facilityAccentById } from "./config";
 
 const DEFAULT_FACILITIES: FacilityOption[] = [
   { id: "ignite-oak-brook", name: "Ignite Medical Resort Oak Brook" },
@@ -26,15 +25,9 @@ export const App: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<string>("baseline");
   const [view, setView] = useState<"dashboard" | "technical">("dashboard");
 
-  const [brief, setBrief] = useState<FacilityBriefReport | null>(null);
-  const [attention, setAttention] = useState<AttentionAnalysisReport | null>(null);
-  const [recommendations, setRecommendations] = useState<RecommendationReport | null>(null);
-  const [questions, setQuestions] = useState<FollowUpQuestionReport | null>(null);
-
-  const [briefLoading, setBriefLoading] = useState(true);
-  const [briefError, setBriefError] = useState<string | null>(null);
-  const [questionsLoading, setQuestionsLoading] = useState(true);
-  const [questionsError, setQuestionsError] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<UnifiedFacilityAnalysisResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
 
   const [technicalData, setTechnicalData] = useState<TechnicalArchitectureReport | null>(null);
@@ -62,29 +55,22 @@ export const App: React.FC = () => {
   }, []);
 
   const loadDashboard = useCallback(async () => {
-    setBriefLoading(true);
-    setBriefError(null);
-    setQuestionsLoading(true);
-    setQuestionsError(null);
+    setLoading(true);
+    setError(null);
 
     const params = `facility_id=${selectedFacility}&scenario=${selectedScenario}`;
     try {
-      const [briefRes, attentionRes, recRes, questionsRes] = await Promise.all([
-        axios.get<FacilityBriefReport>(`/api/agent/facility-brief?${params}`),
-        axios.get<AttentionAnalysisReport>(`/api/agent/attention-areas?${params}`),
-        axios.get<RecommendationReport>(`/api/agent/recommendations?${params}`),
-        axios.get<FollowUpQuestionReport>(`/api/agent/follow-up-questions?${params}`),
-      ]);
-      setBrief(briefRes.data);
-      setAttention(attentionRes.data);
-      setRecommendations(recRes.data);
-      setQuestions(questionsRes.data);
+      // Single unified structured analysis call
+      const res = await axios.get<UnifiedFacilityAnalysisResponse>(
+        `/api/agent/facility-analysis?${params}`,
+      );
+      setAnalysis(res.data);
     } catch (err: any) {
-      setBriefError(err.response?.data?.detail || err.message || "Failed to fetch facility brief.");
-      setQuestionsError(err.response?.data?.detail || err.message || "Failed to fetch suggested questions.");
+      setError(
+        err.response?.data?.detail || err.message || "Failed to fetch facility analysis.",
+      );
     } finally {
-      setBriefLoading(false);
-      setQuestionsLoading(false);
+      setLoading(false);
     }
   }, [selectedFacility, selectedScenario]);
 
@@ -121,13 +107,76 @@ export const App: React.FC = () => {
     }
   };
 
-  const findings = useMemo(() => {
-    if (!attention || !recommendations) return [];
-    return buildFindings(
-      attention.prioritized_operational_concerns,
-      recommendations.verified_recommendations_summary.recommendations,
-    );
-  }, [attention, recommendations]);
+  // Construct brief report from unified response
+  const brief: FacilityBriefReport | null = useMemo(() => {
+    if (!analysis) return null;
+    return {
+      header: {
+        facility_id: analysis.facility_id,
+        facility_name: analysis.facility_name,
+        location: "Midwest / Chicago Metro",
+        report_date: analysis.report_date,
+        scenario: analysis.scenario,
+        overall_status: analysis.overall_status,
+        status_label: analysis.status_label,
+        executive_summary: analysis.executive_summary,
+      },
+      vitals: analysis.vitals,
+      positive_highlights: analysis.positive_highlights,
+      watch_items: [],
+      action_items: [],
+      limitations: {
+        is_simulated_domo: true,
+        data_freshness: analysis.data_freshness,
+        disclaimer: analysis.limitations_disclaimer,
+        data_completeness_notes: [
+          `Analysis Mode: ${analysis.analysis_state === "LLM_ANALYSIS" ? "LLM Analysis (Live)" : "Deterministic Fallback"}`,
+          `Model: ${analysis.audit_receipt?.model || "Gemini 2.5 Flash Lite"}`,
+          `Latency: ${analysis.audit_receipt?.latency_ms ? (analysis.audit_receipt.latency_ms / 1000).toFixed(2) + "s" : "N/A"}`,
+        ],
+      },
+      generated_at: analysis.data_freshness,
+    };
+  }, [analysis]);
+
+  // Use LLM-generated findings directly
+  const findings: Finding[] = useMemo(() => {
+    if (!analysis) return [];
+    return analysis.findings.map((f) => ({
+      id: f.id,
+      title: f.title,
+      domain: f.domain,
+      domainDisplayName: f.domainDisplayName,
+      severity: f.severity,
+      metricValue: f.metricValue,
+      metricSub: f.metricSub,
+      whatsHappening: f.whatsHappening,
+      whyItMatters: f.whyItMatters,
+      driving: f.driving,
+      isCompound: f.isCompound,
+      recommendation: f.recommendation
+        ? {
+            consider: f.recommendation.consider,
+            whySuggested: f.recommendation.whySuggested,
+            role: f.recommendation.role,
+            horizon: f.recommendation.horizon,
+          }
+        : null,
+      evidence: f.evidence,
+    }));
+  }, [analysis]);
+
+  const questionsData: FollowUpQuestionReport | null = useMemo(() => {
+    if (!analysis) return null;
+    return {
+      facility_id: analysis.facility_id,
+      facility_name: analysis.facility_name,
+      scenario: analysis.scenario,
+      analysis_state: analysis.analysis_state === "LLM_ANALYSIS" ? "ANALYSIS_COMPLETE" : "AI_ANALYSIS_UNAVAILABLE",
+      questions: analysis.suggested_questions,
+      generated_at: analysis.data_freshness,
+    };
+  }, [analysis]);
 
   const topSummary = useMemo(() => {
     if (!findings || findings.length === 0) return null;
@@ -171,17 +220,17 @@ export const App: React.FC = () => {
             <OperationalDashboard
               brief={brief}
               findings={findings}
-              loading={briefLoading}
-              error={briefError}
+              loading={loading}
+              error={error}
               scenario={selectedScenario}
             />
             <div className="xl:sticky xl:top-[84px]">
               <ExploreAnalysis
                 facilityId={selectedFacility}
                 scenario={selectedScenario}
-                questionsData={questions}
-                questionsLoading={questionsLoading}
-                questionsError={questionsError}
+                questionsData={questionsData}
+                questionsLoading={loading}
+                questionsError={error}
                 onRefreshQuestions={loadDashboard}
                 topSummary={topSummary}
               />

@@ -273,6 +273,89 @@ export interface DataFlowStep {
   output_component: string;
 }
 
+export interface LLMExecutionReceipt {
+  receipt_id: string;
+  provider: string;
+  model: string;
+  latency_ms: number;
+  is_live_call: boolean;
+  prompt_chars: number;
+  completion_chars: number;
+}
+
+export interface UnifiedFindingRecommendation {
+  consider: string;
+  whySuggested: string;
+  role: string;
+  horizon: string;
+}
+
+export interface UnifiedFindingEvidence {
+  label: string;
+  value: string;
+}
+
+export interface UnifiedAttentionFinding {
+  id: string;
+  title: string;
+  domain: string;
+  domainDisplayName: string;
+  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  metricValue: string;
+  metricSub: string;
+  whatsHappening: string;
+  whyItMatters: string;
+  driving: string[];
+  isCompound: boolean;
+  recommendation: UnifiedFindingRecommendation | null;
+  evidence: UnifiedFindingEvidence[];
+}
+
+export interface UnifiedPositiveHighlight {
+  title: string;
+  domain: string;
+  domain_display_name: string;
+  category?: string;
+  metric_value: string;
+  metric_sub: string;
+  plain_language_description: string;
+  supporting_metric: string;
+  significance: string;
+  whats_happening: string;
+  why_it_matters: string;
+  whats_driving_it: string;
+  what_we_could_learn: string;
+  supporting_metrics: string[];
+}
+
+export interface UnifiedVitalMetric {
+  metric_name: string;
+  label: string;
+  formatted_value: string;
+  subtitle: string;
+  status: "POSITIVE" | "NEUTRAL" | "ATTENTION" | "CRITICAL";
+  trend: "UP" | "DOWN" | "STABLE";
+}
+
+export interface UnifiedFacilityAnalysisResponse {
+  facility_id: string;
+  facility_name: string;
+  scenario: string;
+  report_date: string;
+  overall_status: "HEALTHY" | "WATCH" | "NEEDS_ATTENTION" | "CRITICAL";
+  status_label: string;
+  executive_summary: string;
+  vitals: UnifiedVitalMetric[];
+  findings: UnifiedAttentionFinding[];
+  positive_highlights: UnifiedPositiveHighlight[];
+  suggested_questions: FollowUpQuestion[];
+  analysis_state: "LLM_ANALYSIS" | "DETERMINISTIC_FALLBACK";
+  fallback_reason: string | null;
+  audit_receipt: LLMExecutionReceipt;
+  data_freshness: string;
+  limitations_disclaimer: string;
+}
+
 export interface TechnicalArchitectureReport {
   report_title: string;
   overview: string;
