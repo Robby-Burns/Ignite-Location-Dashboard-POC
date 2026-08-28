@@ -1,12 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import {
-  Building2,
-  Flame,
-  RotateCw,
-  ArrowLeft,
-  Layers,
-} from "lucide-react";
+import { ArrowLeft, Layers } from "lucide-react";
+import { Header, FacilityOption } from "./components/Header";
 import { OperationalDashboard } from "./components/OperationalDashboard";
 import { ExploreAnalysis } from "./components/ExploreAnalysis";
 import { TechnicalView } from "./components/TechnicalView";
@@ -17,12 +12,7 @@ import {
   FollowUpQuestionReport,
   TechnicalArchitectureReport,
 } from "./types";
-import { SCENARIOS, scenarioById, buildFindings, facilityAccentById } from "./config";
-
-interface FacilityOption {
-  id: string;
-  name: string;
-}
+import { buildFindings, facilityAccentById } from "./config";
 
 const DEFAULT_FACILITIES: FacilityOption[] = [
   { id: "ignite-oak-brook", name: "Ignite Medical Resort Oak Brook" },
@@ -45,17 +35,12 @@ export const App: React.FC = () => {
   const [briefError, setBriefError] = useState<string | null>(null);
   const [questionsLoading, setQuestionsLoading] = useState(true);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const [technicalData, setTechnicalData] = useState<TechnicalArchitectureReport | null>(null);
   const [technicalLoading, setTechnicalLoading] = useState(false);
   const [technicalError, setTechnicalError] = useState<string | null>(null);
 
-  const [updatedAt] = useState<string>(() =>
-    new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-  );
-
-  const accent = scenarioById(selectedScenario);
   const facilityAccent = facilityAccentById(selectedFacility);
 
   useEffect(() => {
@@ -107,10 +92,16 @@ export const App: React.FC = () => {
     loadDashboard();
   }, [loadDashboard]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadDashboard();
-    setRefreshing(false);
+  const handleResetSandbox = async () => {
+    setIsResetting(true);
+    setSelectedFacility("ignite-oak-brook");
+    setSelectedScenario("baseline");
+    setView("dashboard");
+    try {
+      await loadDashboard();
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const loadTechnical = async () => {
@@ -162,92 +153,16 @@ export const App: React.FC = () => {
       />
 
       {/* Header */}
-      <header className="bg-surface border-b border-line sticky top-0 z-40">
-        <div className="max-w-[1440px] mx-auto px-5 sm:px-7 py-3.5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            {/* Brand */}
-            <div className="flex items-center gap-3">
-              <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#F0703C] to-[#D6501F] text-white shadow-md">
-                <Flame className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="font-display font-extrabold text-[16.5px] leading-tight tracking-tight text-ink">
-                  IGNITE <span className="text-flame">INTELLIGENCE</span>
-                </h1>
-                <p className="text-[11.5px] text-muted leading-none mt-0.5">
-                  Operational Decision Support
-                </p>
-                <p className="text-[10px] font-bold uppercase tracking-wider leading-none mt-1" style={{ color: facilityAccent.color }}>
-                  Prepared for Robby Burns Interview
-                </p>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-2.5 flex-wrap">
-              {/* Facility selector */}
-              <div className="flex items-center gap-2 bg-surface border border-line rounded-[10px] px-3 py-2 text-[13px] font-medium text-ink-soft">
-                <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: facilityAccent.color }}
-                />
-                <Building2 className="w-4 h-4 text-muted flex-shrink-0" />
-                <select
-                  value={selectedFacility}
-                  onChange={(e) => setSelectedFacility(e.target.value)}
-                  className="bg-transparent font-semibold text-ink outline-none cursor-pointer max-w-[200px]"
-                >
-                  {facilities.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Scenario selector */}
-              <div
-                className="flex items-center gap-2 rounded-[10px] border px-3 py-2 text-[13px] font-medium"
-                style={{ backgroundColor: accent.soft, borderColor: accent.line }}
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: accent.accent }}
-                />
-                <select
-                  value={selectedScenario}
-                  onChange={(e) => setSelectedScenario(e.target.value)}
-                  className="bg-transparent font-bold outline-none cursor-pointer max-w-[180px]"
-                  style={{ color: accent.text }}
-                >
-                  {SCENARIOS.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Updated + refresh */}
-              <div className="flex items-center gap-2">
-                <span className="text-[12px] text-muted whitespace-nowrap">
-                  Updated {updatedAt}
-                </span>
-                <button
-                  onClick={handleRefresh}
-                  aria-label="Refresh analysis"
-                  title="Refresh analysis"
-                  className="w-8 h-8 rounded-lg border border-line bg-surface flex items-center justify-center text-ink-soft hover:bg-line-soft transition-colors"
-                >
-                  <RotateCw
-                    className={`w-4 h-4 ${refreshing || briefLoading ? "animate-spin text-flame" : ""}`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        facilities={facilities}
+        selectedFacility={selectedFacility}
+        setSelectedFacility={setSelectedFacility}
+        selectedScenario={selectedScenario}
+        setSelectedScenario={setSelectedScenario}
+        facilityAccent={facilityAccent}
+        onReset={handleResetSandbox}
+        isResetting={isResetting}
+      />
 
       {/* Main */}
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-5 sm:px-7 py-5 pb-12">
