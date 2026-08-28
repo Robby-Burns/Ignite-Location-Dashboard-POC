@@ -178,15 +178,6 @@ export const App: React.FC = () => {
     };
   }, [analysis]);
 
-  const topSummary = useMemo(() => {
-    if (!findings || findings.length === 0) return null;
-    const top = findings[0];
-    return {
-      title: top.title,
-      metric: top.metricSub,
-    };
-  }, [findings]);
-
   const openTechnical = () => {
     setView("technical");
     if (!technicalData && !technicalLoading) loadTechnical();
@@ -232,7 +223,6 @@ export const App: React.FC = () => {
                 questionsLoading={loading}
                 questionsError={error}
                 onRefreshQuestions={loadDashboard}
-                topSummary={topSummary}
               />
             </div>
           </div>

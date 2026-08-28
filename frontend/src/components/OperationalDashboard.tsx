@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  ArrowRight,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -21,23 +20,6 @@ interface OperationalDashboardProps {
   error: string | null;
   scenario: string;
 }
-
-type OverallStatus = "HEALTHY" | "WATCH" | "NEEDS_ATTENTION" | "CRITICAL";
-
-const STATUS_THEME: Record<
-  OverallStatus,
-  { bg: string; line: string; text: string; label: string }
-> = {
-  HEALTHY: { bg: "#E9F3EE", line: "#BFDBCC", text: "#1F5C41", label: "Stable" },
-  WATCH: { bg: "#FBF2DF", line: "#EBD69E", text: "#8A5C10", label: "Watch" },
-  NEEDS_ATTENTION: {
-    bg: "#FDEEE6",
-    line: "#F3CBB4",
-    text: "#C2410C",
-    label: "Attention",
-  },
-  CRITICAL: { bg: "#FBEAE5", line: "#EFC0B2", text: "#9A2C1B", label: "Critical" },
-};
 
 const VITAL_STATUS: Record<
   string,
@@ -124,88 +106,9 @@ export const OperationalDashboard: React.FC<OperationalDashboardProps> = ({
   }
 
   const { header, vitals, positive_highlights, limitations } = brief;
-  const statusKey = (header.overall_status as OverallStatus) ?? "WATCH";
-  const theme = STATUS_THEME[statusKey] ?? STATUS_THEME.WATCH;
-  const topFinding = findings[0];
-
-  const bannerTitle =
-    topFinding?.title ?? "Operations are stable and meeting benchmarks";
-  const bannerDetail =
-    topFinding?.whatsHappening ?? header.executive_summary;
-
-  const openTopFinding = () => {
-    if (!topFinding) return;
-    setActiveTab("attention");
-    setOpenId(topFinding.id);
-    requestAnimationFrame(() => {
-      document
-        .getElementById(`finding-${topFinding.id}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  };
 
   return (
     <div className="space-y-4 min-w-0">
-      {/* Priority banner / Operational summary */}
-      <div
-        className="rounded-[14px] border px-5 py-4 flex items-center justify-between gap-5 flex-wrap"
-        style={{ backgroundColor: theme.bg, borderColor: theme.line }}
-      >
-        <div className="flex gap-3.5 items-start min-w-0">
-          <div
-            className="w-[34px] h-[34px] rounded-[9px] flex items-center justify-center flex-shrink-0 text-white"
-            style={{ backgroundColor: theme.text }}
-          >
-            {statusKey === "HEALTHY" ? (
-              <CheckCircle2 className="w-[17px] h-[17px]" />
-            ) : (
-              <AlertTriangle className="w-[17px] h-[17px]" />
-            )}
-          </div>
-          <div className="min-w-0">
-            <p
-              className="text-[11px] font-bold uppercase tracking-wide"
-              style={{ color: theme.text }}
-            >
-              {header.status_label}
-            </p>
-            <p className="font-display font-bold text-[17px] text-ink leading-snug">
-              {bannerTitle}
-            </p>
-            <p className="text-[13px] text-ink-soft mt-0.5 max-w-[640px]">
-              {bannerDetail}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="hidden sm:flex items-center gap-2 bg-white border border-line rounded-lg px-3 py-2 shadow-card">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: theme.text }}
-            />
-            <div>
-              <p className="text-[10px] text-muted font-medium uppercase">
-                Overall state
-              </p>
-              <p className="text-[13px] font-bold text-ink">
-                {theme.label}
-              </p>
-            </div>
-          </div>
-
-          {topFinding && (
-            <button
-              onClick={openTopFinding}
-              className="inline-flex items-center gap-1.5 text-white text-[13px] font-semibold rounded-[9px] px-4 py-2.5 hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: theme.text }}
-            >
-              View recommendation
-              <ArrowRight className="w-[13px] h-[13px]" />
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* Vitals strip */}
       <div>

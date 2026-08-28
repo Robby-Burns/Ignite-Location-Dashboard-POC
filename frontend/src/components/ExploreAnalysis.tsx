@@ -25,7 +25,6 @@ interface ExploreAnalysisProps {
   questionsLoading: boolean;
   questionsError: string | null;
   onRefreshQuestions: () => void;
-  topSummary: { title: string; metric: string } | null;
 }
 
 export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
@@ -35,7 +34,6 @@ export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
   questionsLoading,
   questionsError,
   onRefreshQuestions,
-  topSummary,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -125,34 +123,6 @@ export const ExploreAnalysis: React.FC<ExploreAnalysisProps> = ({
               ref={bodyRef}
               className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 min-h-0 max-h-[440px] xl:max-h-none"
             >
-              <p className="text-[12.5px] text-muted">
-                Ask about what the agent found, why it matters, and what's
-                driving it.
-              </p>
-
-              {topSummary && (
-                <div
-                  className="rounded-[11px] border p-3"
-                  style={{
-                    backgroundColor: accent.soft,
-                    borderColor: accent.line,
-                  }}
-                >
-                  <p
-                    className="text-[10.5px] font-bold uppercase tracking-wide"
-                    style={{ color: accent.accent }}
-                  >
-                    Currently exploring
-                  </p>
-                  <p className="font-bold text-[13.5px] text-ink mt-0.5">
-                    {topSummary.title}
-                  </p>
-                  <p className="text-[12px] text-ink-soft mt-0.5">
-                    {topSummary.metric}
-                  </p>
-                </div>
-              )}
-
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
