@@ -157,6 +157,25 @@ async def analyze_facility_unified_endpoint(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+async def prewarm_analysis_cache() -> None:
+    """Pre-warm in-memory cache for standard scenarios on startup so first user load is instantaneous."""
+    scenarios = [
+        "baseline",
+        "staffing_stress",
+        "high_census_strain",
+        "therapy_disruption",
+        "hospital_transfer_spike",
+        "auth_cliff",
+    ]
+    for scenario in scenarios:
+        try:
+            await unified_agent.analyze_facility(
+                facility_id="ignite-oak-brook", scenario=scenario
+            )
+        except Exception:
+            pass
+
+
 # Singleton agent instances
 state_agent = FacilityStateAgent(mcp_client=mcp_client)
 from src.agent.trend_agent import (

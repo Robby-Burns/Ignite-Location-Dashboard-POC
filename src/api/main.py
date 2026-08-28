@@ -19,6 +19,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan context manager for startup and shutdown tasks."""
     # Initialize database tables
     init_db()
+
+    # Pre-warm common facility analyses in background task so first user load is instant
+    import asyncio
+    from src.api.routes import prewarm_analysis_cache
+
+    asyncio.create_task(prewarm_analysis_cache())
     yield
 
 
