@@ -577,7 +577,7 @@ class FacilityUnifiedAnalysisAgent:
             )
 
         pos_payload = []
-        for h in pos_summary.highlights[:6]:
+        for h in pos_summary.highlights:
             pos_payload.append(
                 {
                     "domain": h.domain,
@@ -800,7 +800,7 @@ class FacilityUnifiedAnalysisAgent:
         }
         positive_highlights: list[UnifiedPositiveHighlight] = []
 
-        for h in pos_summary.highlights[:6]:
+        for h in pos_summary.highlights:
             cur_str = self._format_metric_with_unit(h.current_value, h.unit)
             bench_str = self._format_metric_with_unit(h.benchmark_or_target_value, h.unit)
             target_label = "Prior Week" if h.category == "TRAJECTORY_IMPROVEMENT" else "Target"
@@ -986,7 +986,7 @@ class FacilityUnifiedAnalysisAgent:
             )
 
         positive_highlights: list[UnifiedPositiveHighlight] = []
-        for h in pos_summary.highlights[:6]:
+        for h in pos_summary.highlights:
             cur_str = self._format_metric_with_unit(h.current_value, h.unit)
             bench_str = self._format_metric_with_unit(h.benchmark_or_target_value, h.unit)
             target_label = "Prior Week" if h.category == "TRAJECTORY_IMPROVEMENT" else "Target"
