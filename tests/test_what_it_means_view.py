@@ -76,7 +76,7 @@ async def test_inv003_distinguishable_observation_interpretation_significance(
     calcs = report.verified_calculations
     assert "hppd_actual" in calcs.trends
     hppd_calc = calcs.trends["hppd_actual"]
-    assert hppd_calc.current_value == pytest.approx(3.62, abs=0.1)
+    assert hppd_calc.current_value == pytest.approx(3.80, abs=0.1)
     assert hppd_calc.delta_7d is not None
     assert hppd_calc.delta_30d is not None
 

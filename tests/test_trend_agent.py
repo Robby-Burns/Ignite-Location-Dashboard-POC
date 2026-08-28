@@ -141,30 +141,30 @@ async def test_ac2_2_2_deterministic_historical_delta_numerical_accuracy() -> No
 
     calcs = calculate_historical_trends(snapshot, history, "baseline")
 
-    # 1. Census delta verification (Snapshot on Day 30 is 95, 7 days ago Day 23 is 94 -> delta is +1.0)
+    # 1. Census delta verification
     c_trend = calcs.trends["current_census"]
-    assert c_trend.current_value == 95.0
-    assert c_trend.value_7d_ago == 94.0
-    assert c_trend.delta_7d == 1.0
-    assert c_trend.value_14d_ago == 89.0
+    assert c_trend.current_value == 96.0
+    assert c_trend.value_7d_ago == 96.0
+    assert c_trend.delta_7d == 0.0
+    assert c_trend.value_14d_ago == 91.0
 
-    # 2. Net Flow delta verification (Today -2.0, 7 days ago 2.0 -> delta is -4.0)
+    # 2. Net Flow delta verification
     flow_trend = calcs.trends["net_flow"]
-    assert flow_trend.current_value == -2.0
-    assert flow_trend.value_7d_ago == 2.0
-    assert flow_trend.delta_7d == -4.0
+    assert flow_trend.current_value == 2.0
+    assert flow_trend.value_7d_ago == 1.0
+    assert flow_trend.delta_7d == 1.0
 
-    # 3. Staffing HPPD delta verification (Today 4.26, 7 days ago 4.34 -> delta is -0.08)
+    # 3. Staffing HPPD delta verification
     hppd_trend = calcs.trends["hppd_actual"]
-    assert hppd_trend.current_value == 4.26
-    assert hppd_trend.value_7d_ago == 4.34
-    assert hppd_trend.delta_7d == -0.08
+    assert hppd_trend.current_value == 4.45
+    assert hppd_trend.value_7d_ago == 4.31
+    assert hppd_trend.delta_7d == 0.14
 
-    # 4. Acute transfers delta verification (Today 2.0, 7 days ago 0.0 -> delta is +2.0)
+    # 4. Acute transfers delta verification
     transfers_trend = calcs.trends["acute_transfers_this_week"]
-    assert transfers_trend.current_value == 2.0
-    assert transfers_trend.value_7d_ago == 0.0
-    assert transfers_trend.delta_7d == 2.0
+    assert transfers_trend.current_value == 0.0
+    assert transfers_trend.value_7d_ago == 1.0
+    assert transfers_trend.delta_7d == -1.0
 
 
 @pytest.mark.asyncio

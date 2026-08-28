@@ -58,6 +58,160 @@ FACILITIES: dict[str, FacilityMetadata] = {
     ),
 }
 
+# Facility-specific operational profiles — each facility has distinct characteristics
+FACILITY_PROFILES: dict[str, dict] = {
+    "ignite-oak-brook": {
+        # Flagship luxury rehab — high staffing, strong outcomes, premium hospitality
+        "occupancy_baseline": 0.88,
+        "budgeted_occupancy": 0.90,
+        "target_hppd": 4.30,
+        "rn_ratio": 1.05,
+        "lpn_ratio": 1.30,
+        "cna_ratio": 1.80,
+        "base_call_ins": (0, 1),
+        "base_open_shifts": (0, 1),
+        "base_ot_hrs": (2.0, 6.0),
+        "base_agency_pct": (1.5, 4.0),
+        "target_los": 14.0,
+        "short_stay_pct": 0.78,
+        "outlier_pct": 0.05,
+        "therapy_scheduled_min": 120.0,
+        "therapy_delivery_range": (0.93, 0.99),
+        "goals_range": (88.0, 96.0),
+        "holds_range": (0, 2),
+        "mobility_range": (8.2, 9.2),
+        "payer_mix": {
+            "Medicare A": 45.0,
+            "Managed Care": 28.0,
+            "Medicaid": 12.0,
+            "Commercial / Private": 12.0,
+            "Veterans Affairs": 3.0,
+        },
+        "base_exp_48h": (0, 1),
+        "base_pending_reauth": (1, 3),
+        "base_denials": (0, 1),
+        "dining_range": (91.0, 97.0),
+        "clean_range": (94.0, 99.0),
+        "nps_range": (62.0, 80.0),
+        "guest_req_range": (1, 3),
+        "res_time_range": (1.0, 2.5),
+        "unplanned_30d_range": (3, 6),
+        "readm_pct_range": (7.0, 10.0),
+        "benchmark_readm": 12.0,
+        "acute_week_range": (0, 1),
+        "transfer_reasons": {
+            "respiratory": 1,
+            "cardiac": 1,
+            "fall_trauma": 1,
+            "sepsis_infection": 0,
+            "altered_mental_status": 0,
+            "other": 1,
+        },
+        "admissions_range": (3, 7),
+        "discharges_range": (2, 5),
+    },
+    "ignite-mokena": {
+        # Orthopedic/cardio specialty — fast turnaround, managed-care heavy, efficient staffing
+        "occupancy_baseline": 0.82,
+        "budgeted_occupancy": 0.85,
+        "target_hppd": 3.90,
+        "rn_ratio": 0.90,
+        "lpn_ratio": 1.40,
+        "cna_ratio": 1.90,
+        "base_call_ins": (1, 3),
+        "base_open_shifts": (1, 3),
+        "base_ot_hrs": (5.0, 14.0),
+        "base_agency_pct": (5.0, 10.0),
+        "target_los": 12.0,
+        "short_stay_pct": 0.82,
+        "outlier_pct": 0.04,
+        "therapy_scheduled_min": 95.0,
+        "therapy_delivery_range": (0.90, 0.97),
+        "goals_range": (82.0, 92.0),
+        "holds_range": (2, 5),
+        "mobility_range": (7.0, 8.2),
+        "payer_mix": {
+            "Medicare A": 32.0,
+            "Managed Care": 38.0,
+            "Medicaid": 10.0,
+            "Commercial / Private": 16.0,
+            "Veterans Affairs": 4.0,
+        },
+        "base_exp_48h": (1, 3),
+        "base_pending_reauth": (2, 5),
+        "base_denials": (0, 2),
+        "dining_range": (86.0, 93.0),
+        "clean_range": (90.0, 96.0),
+        "nps_range": (50.0, 68.0),
+        "guest_req_range": (2, 6),
+        "res_time_range": (1.5, 4.0),
+        "unplanned_30d_range": (5, 9),
+        "readm_pct_range": (9.0, 12.5),
+        "benchmark_readm": 12.0,
+        "acute_week_range": (1, 3),
+        "transfer_reasons": {
+            "respiratory": 1,
+            "cardiac": 2,
+            "fall_trauma": 2,
+            "sepsis_infection": 1,
+            "altered_mental_status": 0,
+            "other": 1,
+        },
+        "admissions_range": (2, 5),
+        "discharges_range": (2, 5),
+    },
+    "ignite-kansas-city": {
+        # Stroke/neuro specialty — complex cases, longer stays, higher Medicaid, leaner staffing
+        "occupancy_baseline": 0.90,
+        "budgeted_occupancy": 0.88,
+        "target_hppd": 3.75,
+        "rn_ratio": 0.88,
+        "lpn_ratio": 1.45,
+        "cna_ratio": 2.00,
+        "base_call_ins": (1, 4),
+        "base_open_shifts": (2, 4),
+        "base_ot_hrs": (8.0, 18.0),
+        "base_agency_pct": (8.0, 15.0),
+        "target_los": 21.0,
+        "short_stay_pct": 0.62,
+        "outlier_pct": 0.10,
+        "therapy_scheduled_min": 110.0,
+        "therapy_delivery_range": (0.88, 0.96),
+        "goals_range": (78.0, 88.0),
+        "holds_range": (3, 6),
+        "mobility_range": (6.5, 7.8),
+        "payer_mix": {
+            "Medicare A": 35.0,
+            "Managed Care": 22.0,
+            "Medicaid": 28.0,
+            "Commercial / Private": 10.0,
+            "Veterans Affairs": 5.0,
+        },
+        "base_exp_48h": (1, 3),
+        "base_pending_reauth": (2, 5),
+        "base_denials": (1, 2),
+        "dining_range": (83.0, 91.0),
+        "clean_range": (88.0, 94.0),
+        "nps_range": (45.0, 62.0),
+        "guest_req_range": (3, 7),
+        "res_time_range": (2.0, 5.0),
+        "unplanned_30d_range": (6, 11),
+        "readm_pct_range": (10.5, 14.0),
+        "benchmark_readm": 12.0,
+        "acute_week_range": (1, 3),
+        "transfer_reasons": {
+            "respiratory": 2,
+            "cardiac": 1,
+            "fall_trauma": 1,
+            "sepsis_infection": 1,
+            "altered_mental_status": 2,
+            "other": 1,
+        },
+        "admissions_range": (2, 5),
+        "discharges_range": (1, 4),
+    },
+}
+
 
 class SyntheticFacilityDataGenerator:
     """Generates synthetic operational records with mathematical consistency and scenario support."""
@@ -73,25 +227,25 @@ class SyntheticFacilityDataGenerator:
         day_offset: int = 0,
         scenario: str = "baseline",
     ) -> DailyFacilitySnapshot:
-        """Generate a single daily snapshot with realistic domain values and scenario modifiers."""
+        """Generate a single daily snapshot with facility-specific operational parameters."""
         facility = FACILITIES.get(facility_id, FACILITIES["ignite-oak-brook"])
+        profile = FACILITY_PROFILES.get(
+            facility_id, FACILITY_PROFILES["ignite-oak-brook"]
+        )
         capacity = facility.certified_operational_beds
 
-        # Baseline parameters
-        base_census = int(capacity * 0.86)
-        # Seasonal/day wave
+        # Census — scaled by facility-specific occupancy baseline
+        base_census = int(capacity * profile["occupancy_baseline"])
         wave = math.sin((day_offset + 5) / 4.0) * 3.0
         daily_jitter = self.rng.randint(-2, 2)
         census_val = max(10, min(capacity, int(base_census + wave + daily_jitter)))
 
-        # Scenario modifiers
         if scenario == "high_census_strain" and day_offset >= 20:
             census_val = min(capacity, capacity - self.rng.randint(1, 3))
         elif scenario == "staffing_stress" and day_offset >= 25:
-            # High census combined with low staffing
             census_val = min(capacity, int(capacity * 0.93))
 
-        budgeted_census = int(capacity * 0.88)
+        budgeted_census = int(capacity * profile["budgeted_occupancy"])
         occ_rate = round((census_val / capacity) * 100.0, 1)
         avail_beds = max(0, capacity - census_val)
 
@@ -105,16 +259,18 @@ class SyntheticFacilityDataGenerator:
             budgeted_target_census=budgeted_census,
         )
 
-        # Admissions & Discharges
+        # Admissions & Discharges — facility-specific ranges
+        adm_lo, adm_hi = profile["admissions_range"]
+        dis_lo, dis_hi = profile["discharges_range"]
         today_adm = max(
             0,
-            self.rng.randint(2, 6)
+            self.rng.randint(adm_lo, adm_hi)
             if day_offset % 7 not in (5, 6)
             else self.rng.randint(0, 2),
         )
         today_dis = max(
             0,
-            self.rng.randint(1, 5)
+            self.rng.randint(dis_lo, dis_hi)
             if day_offset % 7 not in (0, 6)
             else self.rng.randint(0, 2),
         )
@@ -138,17 +294,19 @@ class SyntheticFacilityDataGenerator:
             rolling_7d_discharges=rolling_7d_dis,
         )
 
-        # Length of Stay
-        target_los = 17.5
+        # Length of Stay — facility-specific target and mix
+        target_los = profile["target_los"]
         avg_los = round(
             target_los
             + (math.sin(day_offset / 6.0) * 1.5)
             + self.rng.uniform(-0.5, 0.5),
             1,
         )
-        short_stay = int(census_val * 0.72)
+        short_stay = int(census_val * profile["short_stay_pct"])
         long_stay = census_val - short_stay
-        outliers = max(1, int(census_val * 0.08) + self.rng.randint(0, 2))
+        outliers = max(
+            1, int(census_val * profile["outlier_pct"]) + self.rng.randint(0, 2)
+        )
 
         los = LengthOfStayData(
             average_los_days=avg_los,
@@ -159,13 +317,17 @@ class SyntheticFacilityDataGenerator:
             median_los_days=round(avg_los - 1.2, 1),
         )
 
-        # Therapy
-        sched_min = 105.0
-        deliv_min = round(sched_min * self.rng.uniform(0.92, 0.98), 1)
+        # Therapy — facility-specific scheduled minutes and delivery
+        sched_min = profile["therapy_scheduled_min"]
+        del_lo, del_hi = profile["therapy_delivery_range"]
+        deliv_min = round(sched_min * self.rng.uniform(del_lo, del_hi), 1)
         comp_rate = round((deliv_min / sched_min) * 100.0, 1)
-        goals_pct = round(self.rng.uniform(84.0, 94.0), 1)
-        holds_count = self.rng.randint(1, 4)
-        mobility_idx = round(self.rng.uniform(7.8, 8.9), 1)
+        goals_lo, goals_hi = profile["goals_range"]
+        goals_pct = round(self.rng.uniform(goals_lo, goals_hi), 1)
+        holds_lo, holds_hi = profile["holds_range"]
+        holds_count = self.rng.randint(holds_lo, holds_hi)
+        mob_lo, mob_hi = profile["mobility_range"]
+        mobility_idx = round(self.rng.uniform(mob_lo, mob_hi), 1)
 
         if scenario == "therapy_disruption" and day_offset >= 24:
             deliv_min = round(sched_min * 0.78, 1)
@@ -183,23 +345,27 @@ class SyntheticFacilityDataGenerator:
             functional_mobility_gain_index=mobility_idx,
         )
 
-        # Staffing
-        target_hppd = 4.10
+        # Staffing — facility-specific HPPD target and ratios
+        target_hppd = profile["target_hppd"]
         actual_hppd = round(target_hppd + self.rng.uniform(-0.15, 0.25), 2)
-        rn_hrs = round(census_val * 0.95, 1)
-        lpn_hrs = round(census_val * 1.35, 1)
-        cna_hrs = round(census_val * 1.85, 1)
-        call_ins = self.rng.randint(0, 2)
-        open_shifts = self.rng.randint(0, 2)
-        ot_hrs = round(self.rng.uniform(2.0, 10.0), 1)
-        agency_pct = round(self.rng.uniform(2.0, 6.5), 1)
+        rn_hrs = round(census_val * profile["rn_ratio"], 1)
+        lpn_hrs = round(census_val * profile["lpn_ratio"], 1)
+        cna_hrs = round(census_val * profile["cna_ratio"], 1)
+        ci_lo, ci_hi = profile["base_call_ins"]
+        call_ins = self.rng.randint(ci_lo, ci_hi)
+        os_lo, os_hi = profile["base_open_shifts"]
+        open_shifts = self.rng.randint(os_lo, os_hi)
+        ot_lo, ot_hi = profile["base_ot_hrs"]
+        ot_hrs = round(self.rng.uniform(ot_lo, ot_hi), 1)
+        ag_lo, ag_hi = profile["base_agency_pct"]
+        agency_pct = round(self.rng.uniform(ag_lo, ag_hi), 1)
 
         if scenario == "staffing_stress" and day_offset >= 25:
-            actual_hppd = 3.62
+            actual_hppd = round(target_hppd - 0.50, 2)
             call_ins = 6
             open_shifts = 5
-            ot_hrs = 36.5
-            agency_pct = 18.5
+            ot_hrs = round(ot_hi * 2.5, 1)
+            agency_pct = round(ag_hi * 1.5, 1)
 
         staffing = StaffingData(
             hppd_actual=actual_hppd,
@@ -213,18 +379,15 @@ class SyntheticFacilityDataGenerator:
             agency_staff_pct=agency_pct,
         )
 
-        # Payer & Auth
-        payer_mix = {
-            "Medicare A": 42.0,
-            "Managed Care": 33.0,
-            "Medicaid": 14.0,
-            "Commercial / Private": 8.0,
-            "Veterans Affairs": 3.0,
-        }
-        exp_48h = self.rng.randint(0, 2)
+        # Payer & Auth — facility-specific payer mix
+        payer_mix = dict(profile["payer_mix"])
+        pe_lo, pe_hi = profile["base_exp_48h"]
+        exp_48h = self.rng.randint(pe_lo, pe_hi)
         exp_72h = exp_48h + self.rng.randint(1, 3)
-        pending_reauth = self.rng.randint(1, 4)
-        denials = self.rng.randint(0, 1)
+        pr_lo, pr_hi = profile["base_pending_reauth"]
+        pending_reauth = self.rng.randint(pr_lo, pr_hi)
+        de_lo, de_hi = profile["base_denials"]
+        denials = self.rng.randint(de_lo, de_hi)
 
         if scenario == "auth_cliff" and day_offset >= 26:
             exp_48h = 9
@@ -240,12 +403,17 @@ class SyntheticFacilityDataGenerator:
             auth_denials_pending_appeal_count=denials,
         )
 
-        # Hospitality
-        dining = round(self.rng.uniform(88.0, 96.0), 1)
-        clean = round(self.rng.uniform(91.0, 98.0), 1)
-        nps = round(self.rng.uniform(55.0, 78.0), 1)
-        guest_req = self.rng.randint(1, 5)
-        res_time = round(self.rng.uniform(1.2, 3.5), 1)
+        # Hospitality — facility-specific satisfaction baselines
+        d_lo, d_hi = profile["dining_range"]
+        dining = round(self.rng.uniform(d_lo, d_hi), 1)
+        cl_lo, cl_hi = profile["clean_range"]
+        clean = round(self.rng.uniform(cl_lo, cl_hi), 1)
+        n_lo, n_hi = profile["nps_range"]
+        nps = round(self.rng.uniform(n_lo, n_hi), 1)
+        gr_lo, gr_hi = profile["guest_req_range"]
+        guest_req = self.rng.randint(gr_lo, gr_hi)
+        rt_lo, rt_hi = profile["res_time_range"]
+        res_time = round(self.rng.uniform(rt_lo, rt_hi), 1)
 
         hospitality = HospitalityData(
             dining_satisfaction_score=dining,
@@ -255,19 +423,15 @@ class SyntheticFacilityDataGenerator:
             avg_request_resolution_hours=res_time,
         )
 
-        # Transfers
-        unplanned_30d = self.rng.randint(4, 8)
-        readm_pct = round(self.rng.uniform(7.0, 11.5), 1)
-        benchmark_readm = 12.0
-        acute_week = self.rng.randint(0, 2)
-        transfers_by_reason = {
-            "respiratory": 2,
-            "cardiac": 1,
-            "fall_trauma": 1,
-            "sepsis_infection": 1,
-            "altered_mental_status": 0,
-            "other": 1,
-        }
+        # Transfers — facility-specific readmission and transfer patterns
+        ut_lo, ut_hi = profile["unplanned_30d_range"]
+        unplanned_30d = self.rng.randint(ut_lo, ut_hi)
+        rm_lo, rm_hi = profile["readm_pct_range"]
+        readm_pct = round(self.rng.uniform(rm_lo, rm_hi), 1)
+        benchmark_readm = profile["benchmark_readm"]
+        aw_lo, aw_hi = profile["acute_week_range"]
+        acute_week = self.rng.randint(aw_lo, aw_hi)
+        transfers_by_reason = dict(profile["transfer_reasons"])
 
         if scenario == "hospital_transfer_spike" and day_offset >= 25:
             unplanned_30d = 14
