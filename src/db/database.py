@@ -18,6 +18,10 @@ load_dotenv()
 
 Base = declarative_base()
 
+# Lazy-initialized engine and session factory
+_engine = None
+_session_factory = None
+
 
 def get_database_url() -> str:
     """Derive clean database URL, normalizing PostgreSQL URLs for Neon/Railway with pg8000."""
@@ -31,36 +35,55 @@ def get_database_url() -> str:
     if raw_url.startswith(("postgres://", "postgresql://")):
         parsed = urllib.parse.urlparse(raw_url)
         port_part = f":{parsed.port}" if parsed.port else ""
-        # Clean path from any query params attached incorrectly
         path = parsed.path
         return f"postgresql+pg8000://{parsed.username}:{parsed.password}@{parsed.hostname}{port_part}{path}"
 
     return raw_url
 
 
-DATABASE_URL = get_database_url()
+def _get_engine():
+    """Get or create the SQLAlchemy engine (lazy initialization)."""
+    global _engine
+    if _engine is None:
+        db_url = get_database_url()
+        engine_kwargs = {"echo": False}
+        if "sqlite" in db_url:
+            engine_kwargs["connect_args"] = {"check_same_thread": False}
+        else:
+            engine_kwargs["pool_size"] = 5
+            engine_kwargs["max_overflow"] = 10
+            engine_kwargs["pool_recycle"] = 300
+        _engine = create_engine(db_url, **engine_kwargs)
+    return _engine
 
-# Engine creation with connection pool settings
-engine_kwargs = {"echo": False}
-if "sqlite" in DATABASE_URL:
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
-else:
-    engine_kwargs["pool_size"] = 5
-    engine_kwargs["max_overflow"] = 10
-    engine_kwargs["pool_recycle"] = 300
 
-engine = create_engine(DATABASE_URL, **engine_kwargs)
-SessionFactory = sessionmaker(
-    bind=engine,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
+def _get_session_factory():
+    """Get or create the session factory (lazy initialization)."""
+    global _session_factory
+    if _session_factory is None:
+        _session_factory = sessionmaker(
+            bind=_get_engine(),
+            expire_on_commit=False,
+            autocommit=False,
+            autoflush=False,
+        )
+    return _session_factory
+
+
+# Backward-compatible module-level access
+@property
+def engine():
+    return _get_engine()
+
+
+@property
+def SessionFactory():
+    return _get_session_factory()
 
 
 def get_db():
     """FastAPI dependency for yielding database sessions."""
-    session = SessionFactory()
+    session = _get_session_factory()()
     try:
         yield session
         session.commit()
@@ -73,7 +96,6 @@ def get_db():
 
 def init_db() -> None:
     """Initialize database tables idempotently."""
-    # Ensure models are imported so Base has table definitions
     from src.db.models import DailySnapshotRecord, FacilityRecord  # noqa: F401
 
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=_get_engine())
