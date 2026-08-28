@@ -225,49 +225,45 @@ class UnifiedFacilityAnalysisResponse(BaseModel):
 
 
 UNIFIED_ANALYSIS_SYSTEM_PROMPT = """You are the Ignite Operational Decision Support Agent for Ignite Medical Resorts.
-You translate verified facility telemetry into concise, actionable leadership decision-support insights.
+Translate verified facility telemetry into concise, actionable leadership decision-support insights.
 
 ARCHITECTURAL PRINCIPLES:
 1. PYTHON OWNS THE FACTS: All numbers, metrics, variances, and threshold breaches provided below are exact and verified. Do not calculate, estimate, or alter numbers.
-2. EVIDENCE-BASED REASONING (DO NOT INVENT CAUSES):
-   - OBSERVED: What the data directly proves.
-   - INTERPRETATION: A reasonable operational explanation based on the evidence.
-   - UNKNOWN: If the data does not establish why something is happening, explicitly state that the available data is insufficient to determine the root cause.
-3. ADVISORY FRAMING (RECOMMENDATION ≠ COMMAND):
-   - Frame suggestions as options for leadership review (e.g. "Consider reviewing internal float pool", "Consider auditing 48h discharge queue").
-   - Never claim an action has been taken or issue direct orders.
-4. STRICT NUMERICAL GROUNDING:
-   - Every number you cite MUST exist in the verified input facts.
-5. CONCISE & PRACTICAL:
-   - Keep explanations direct, professional, and free of corporate buzzwords.
+2. EVIDENCE-BASED REASONING:
+   - OBSERVED: What data directly proves.
+   - INTERPRETATION: Concise operational explanation.
+   - UNKNOWN: If cause is not in data, explicitly state data is insufficient.
+3. ADVISORY FRAMING: Frame suggestions as options for leadership review (e.g. "Consider reviewing...").
+4. STRICT NUMERICAL GROUNDING: Every number you cite MUST exist in the verified input facts.
+5. CONCISE & PUNCHY: Keep each explanation to 1-2 direct sentences (max 25 words per field).
 
-Return a JSON object conforming exactly to this schema:
+Return a JSON object conforming strictly to this schema:
 {
   "executive_summary": "1-2 sentence executive summary of current facility state and primary priorities.",
   "findings_interpretations": [
     {
       "id": "item_id from input",
-      "whats_happening": "1-2 sentences describing what the data shows on the floor.",
-      "why_it_matters": "1-2 sentences explaining clinical, regulatory, or operational risk.",
-      "whats_driving_it": ["domain1", "domain2"],
-      "what_you_could_consider": "Practical, step-by-step advisory suggestion for leadership review.",
-      "why_suggested": "Why this specific action was suggested based on the numbers."
+      "whats_happening": "1 concise sentence describing the floor condition.",
+      "why_it_matters": "1 concise sentence explaining clinical, regulatory, or operational risk.",
+      "whats_driving_it": ["domain1"],
+      "what_you_could_consider": "1 concise practical advisory suggestion for leadership review.",
+      "why_suggested": "1 concise sentence rationale."
     }
   ],
   "positive_interpretations": [
     {
       "title": "title from input",
-      "whats_happening": "1-2 sentences on what is going well.",
-      "why_it_matters": "1-2 sentences on why this matters to facility success.",
-      "whats_driving_it": "Observed driver if supported by data, or state: 'The specific operational drivers cannot be determined from available data alone.'",
-      "what_we_could_learn": "1-2 sentences on how leadership can sustain or replicate this positive result."
+      "whats_happening": "1 concise sentence on what is going well.",
+      "why_it_matters": "1 concise sentence on why this matters to facility success.",
+      "whats_driving_it": "Observed driver or note that specific driver cannot be determined from data alone.",
+      "what_we_could_learn": "1 concise sentence lesson to sustain or replicate."
     }
   ],
   "suggested_questions": [
     {
-      "question_text": "Practical question to investigate root causes or metrics from the current findings?",
+      "question_text": "Practical question to investigate current findings?",
       "related_domain": "staffing",
-      "context_summary": "Why this question is relevant based on current findings.",
+      "context_summary": "Why relevant based on current findings.",
       "priority": "HIGH"
     }
   ]
@@ -276,24 +272,41 @@ Return a JSON object conforming exactly to this schema:
 
 
 class FacilityUnifiedAnalysisAgent:
-    """Agent that performs complete facility analysis using a single unified structured LLM call."""
+    """Agent that performs complete facility analysis using a single unified structured LLM call with in-memory caching."""
 
     def __init__(
         self,
         mcp_client: MockDomoMCPClient | None = None,
         llm_client: LLMClient | None = None,
+        cache_ttl_seconds: float = 300.0,
     ) -> None:
         self.mcp_client = mcp_client or MockDomoMCPClient()
         self.llm_client = llm_client or LLMClient()
         self.reconciler = NumericalGroundingReconciler()
+        self.cache_ttl_seconds = cache_ttl_seconds
+        self._cache: dict[str, tuple[float, UnifiedFacilityAnalysisResponse]] = {}
+
+    def clear_cache(self) -> None:
+        """Clear all in-memory cached analyses."""
+        self._cache.clear()
 
     async def analyze_facility(
         self,
         facility_id: str = "ignite-oak-brook",
         scenario: str = "baseline",
         days_history: int = 30,
+        force_refresh: bool = False,
     ) -> UnifiedFacilityAnalysisResponse:
-        """Execute end-to-end unified facility analysis with 1 structured LLM call."""
+        """Execute end-to-end unified facility analysis with in-memory cache and 1 structured LLM call."""
+        cache_key = f"{facility_id}:{scenario}:{days_history}"
+        now = datetime.now(UTC).timestamp()
+
+        # Check in-memory cache
+        if not force_refresh and cache_key in self._cache:
+            cached_time, cached_response = self._cache[cache_key]
+            if (now - cached_time) < self.cache_ttl_seconds:
+                return cached_response
+
         # 1. Retrieve raw data via Mock Domo MCP client
         try:
             snapshot = self.mcp_client.get_facility_snapshot(
@@ -375,7 +388,7 @@ class FacilityUnifiedAnalysisAgent:
 
         # 7. Check if LLM call succeeded or fallback needed
         if llm_output is None or not receipt.is_live_call:
-            return self._build_fallback_response(
+            response = self._build_fallback_response(
                 facility_id=facility_id,
                 facility_name=facility_name,
                 scenario=scenario,
@@ -389,9 +402,11 @@ class FacilityUnifiedAnalysisAgent:
                 receipt=receipt,
                 reason="Live LLM call was unavailable; displaying validated deterministic analysis.",
             )
+            self._cache[cache_key] = (now, response)
+            return response
 
         # 8. Reconcile LLM output against verified ground truth numbers
-        return self._build_reconciled_response(
+        response = self._build_reconciled_response(
             facility_id=facility_id,
             facility_name=facility_name,
             scenario=scenario,
@@ -406,6 +421,8 @@ class FacilityUnifiedAnalysisAgent:
             ground_truth=ground_truth,
             receipt=receipt,
         )
+        self._cache[cache_key] = (now, response)
+        return response
 
     def _determine_overall_status(
         self, attention_summary: FacilityAttentionSummary
@@ -491,9 +508,9 @@ class FacilityUnifiedAnalysisAgent:
         pos_summary: FacilityPositiveHighlightsSummary,
         trends: FacilityTrendCalculations,
     ) -> str:
-        """Construct a concise prompt containing all pre-computed facts for the LLM."""
+        """Construct a concise prompt containing key pre-computed facts for the LLM."""
         attention_payload = []
-        for item in attention_summary.attention_items:
+        for item in attention_summary.attention_items[:4]:
             attention_payload.append(
                 {
                     "id": item.item_id,
@@ -505,33 +522,17 @@ class FacilityUnifiedAnalysisAgent:
                     "variance": f"{item.variance_or_deficit} {item.unit}",
                     "evidence_fact": item.evidence_statement,
                     "related_domains": item.related_domains,
-                    "is_cross_domain_compound": item.is_cross_domain_compound,
-                }
-            )
-
-        recs_payload = []
-        for r in rec_summary.recommendations:
-            recs_payload.append(
-                {
-                    "recommendation_id": r.recommendation_id,
-                    "domain": r.domain,
-                    "priority": r.priority,
-                    "time_horizon": r.time_horizon,
-                    "target_role": r.target_role_or_department,
-                    "action_title": r.action_title,
-                    "rationale_evidence": r.rationale,
                 }
             )
 
         pos_payload = []
-        for h in pos_summary.highlights[:5]:
+        for h in pos_summary.highlights[:3]:
             pos_payload.append(
                 {
                     "domain": h.domain,
                     "title": h.title,
-                    "category": h.category,
                     "current_value": f"{h.current_value} {h.unit}",
-                    "target_or_benchmark": f"{h.benchmark_or_target_value} {h.unit}",
+                    "target": f"{h.benchmark_or_target_value} {h.unit}",
                     "evidence_statement": h.evidence_statement,
                 }
             )
@@ -539,25 +540,15 @@ class FacilityUnifiedAnalysisAgent:
         payload = {
             "facility_id": snapshot.facility_id,
             "facility_name": facility_name,
-            "snapshot_date": snapshot.snapshot_date.isoformat(),
             "scenario": attention_summary.scenario,
             "active_attention_conditions": attention_payload,
-            "cross_domain_correlations": [
-                {
-                    "domains": c.domains,
-                    "impact": c.impact_level,
-                    "evidence": c.evidence_facts,
-                }
-                for c in attention_summary.cross_domain_correlations
-            ],
-            "deterministic_baseline_recommendations": recs_payload,
-            "verified_positive_highlights": pos_payload,
-            "meaningful_30d_shifts": trends.meaningful_shifts[:5],
+            "positive_highlights": pos_payload,
+            "top_shifts": trends.meaningful_shifts[:3],
         }
 
         return (
-            "Analyze and interpret the verified operational telemetry below for facility leadership:\n\n"
-            + json.dumps(payload, indent=2)
+            "Analyze and interpret the verified operational telemetry below for facility leadership:\n"
+            + json.dumps(payload, separators=(",", ":"))
         )
 
     def _augment_ground_truth(

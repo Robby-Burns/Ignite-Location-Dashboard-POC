@@ -104,6 +104,9 @@ async def analyze_facility_unified_endpoint(
     days_history: int = Query(
         default=30, ge=1, le=365, description="Historical observation days"
     ),
+    force_refresh: bool = Query(
+        default=False, description="Whether to bypass in-memory cache"
+    ),
 ) -> UnifiedFacilityAnalysisResponse:
     """Perform complete facility operational analysis with single unified structured LLM reasoning."""
     try:
@@ -111,6 +114,7 @@ async def analyze_facility_unified_endpoint(
             facility_id=facility_id,
             scenario=scenario,
             days_history=days_history,
+            force_refresh=force_refresh,
         )
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

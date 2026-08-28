@@ -191,3 +191,35 @@ async def test_api_facility_analysis_endpoint():
         assert "positive_highlights" in data
         assert "suggested_questions" in data
         assert "audit_receipt" in data
+
+
+@pytest.mark.asyncio
+async def test_unified_agent_in_memory_caching(mcp_client):
+    """Verify that in-memory cache returns cached response without making subsequent LLM calls."""
+    mock_client = LLMClient()
+    mock_receipt = LLMExecutionReceipt(
+        receipt_id="REC-TEST-CACHE",
+        provider="mock",
+        model="google/gemini-2.5-flash-lite",
+        latency_ms=10.0,
+        is_live_call=False,
+        prompt_chars=500,
+        completion_chars=0,
+    )
+    with patch.object(mock_client, "generate_structured_analysis", new_callable=AsyncMock) as mock_gen:
+        mock_gen.return_value = (None, mock_receipt)
+        agent = FacilityUnifiedAnalysisAgent(mcp_client=mcp_client, llm_client=mock_client)
+        
+        # 1. First call triggers generation
+        res1 = await agent.analyze_facility("ignite-oak-brook", "baseline")
+        assert mock_gen.call_count == 1
+        
+        # 2. Second identical call returns from in-memory cache without calling LLM again
+        res2 = await agent.analyze_facility("ignite-oak-brook", "baseline")
+        assert mock_gen.call_count == 1
+        assert res1.report_date == res2.report_date
+        
+        # 3. Force refresh bypasses cache and calls generation
+        res3 = await agent.analyze_facility("ignite-oak-brook", "baseline", force_refresh=True)
+        assert mock_gen.call_count == 2
+
